@@ -1,0 +1,7 @@
+(* import libraries *)
+$(SML_LIB)/basis/basis.mlb
+
+(* program files *)
+Parser.sig
+Parser.sml
+Main.sml
