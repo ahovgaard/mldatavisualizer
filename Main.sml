@@ -20,14 +20,6 @@ fun parseArguments args =
      | []                    => ()
      | _                     => raise InvalidArguments
 
-(* alternative function definition
-fun parseArguments ("-t" :: arg :: args) =
-      parseTypeDef arg before parseArguments args
-  | parseArguments ("-s" :: arg :: args) =
-      parseDataType arg before parseArguments args
-  | parseArguments _ = ()
-*)
-
 fun main () = parseArguments (CommandLine.arguments())
   handle InvalidArguments => print "InvalidArguments: Do somthing smart here!\n"
 
