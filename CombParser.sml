@@ -18,7 +18,7 @@ exception InternalError
 datatype token = ID of string       | NUM of int        | VAL 
                | EQUAL              | NEQUAL            | LPAREN
                | RPAREN             | DATATYPE          | TYPE
-               | COMMA
+               | COMMA              | PIPE
 
 fun alphaTok str =
   case str of
@@ -34,6 +34,7 @@ fun symbolic str =
      | ","  => SOME COMMA
      | "="  => SOME EQUAL
      | "<>" => SOME NEQUAL
+     | "|"  => SOME PIPE
      | _    => NONE
 
 fun symbTok (str, ss) =
@@ -86,7 +87,11 @@ val test_symb1 = scan "val ? = (hej, 43, __)" (* =
 exception Punt (* backtracking *)
 exception ParserError (* failed to parse input stream *)
 
-datatype partree = Val of string * partree | Num of int | Id of string
+datatype id = Id of string
+
+datatype typeDef = Enum of string
+
+datatype decl = Datatype of id * typeDef list
 
 (* The parser combinators *)
 infix 6 $--
@@ -94,6 +99,22 @@ infix 5 ---
 infix 3 >>>
 infix 0 |||
 
+
+fun dType ph =
+  case ph of
+       (DATATYPE :: ID s :: EQUAL :: rest) => (Datatype (Id s, parseTypeDef rest))
+     | _                                   => raise Punt
+
+and parseTypeDef ls =
+  case ls of
+       (ID s :: PIPE :: rest) => (Enum s :: parseTypeDef rest, rest)
+     | (ID s :: rest)         => ([Enum s], rest)
+
+
+
+(*datatype partree = Val of string * partree | Num of int | Id of string*)
+
+(*
 fun (ph1 ||| ph2) toks = ph1 toks handle Punt => ph2 toks
 
 fun (ph1 --- ph2) toks =
@@ -110,9 +131,7 @@ fun id ph =
   case ph of
        (ID s :: rest) => (Id s, rest)
      | _              => raise Punt
-
-
-
+     *)
 (* Checks that there are no excess data when the parse finishes and handles
    top-level punts, raising ParserError exception. *)
 fun parse_list parser stream =
