@@ -84,81 +84,132 @@ val test_symb1 = scan "val ? = (hej, 43, __)" (* =
 
 (******************************************************************************)
 (* Parser combinator :: The actual parser *)
-exception Punt (* backtracking *)
+(*exception Punt (* backtracking *)
 exception ParserError (* failed to parse input stream *)
 
 datatype id = Id of string
 
 datatype typeDef = Enum of string
 
-datatype decl = Datatype of id * typeDef list
+datatype decl = Datatype of string
 
-(* The parser combinators *)
-infix 6 $--
-infix 5 ---
-infix 3 >>>
-infix 0 |||
+(*datatype decl = Datatype of id * typeDef list*)
+
+fun id (ID s :: toks) = (Id s, toks)
+  | id toks           = raise Punt
+
+fun dType (DATATYPE :: ID s :: EQUAL :: toks) = (Datatype s, toks)
+  | dType toks                                = raise Punt
+
+fun enumPipe (ID s :: PIPE :: toks) = (Enum s, toks)
+  | enumPipe _                      = raise Punt
+
+fun enum (ID s :: toks) = (Enum s, toks)
+  | enum _              = raise Punt
 
 
+(*fun dType (DATATYPE :: ID s :: EQUAL :: ID s1 :: rest) =
+    (Datatype (Id s, [Enum s1]), rest)
+  | dType _ = raise Punt*)
+
+fun empty toks = ([], toks)
+
+fun (ph1 ||| ph2) toks = ph1 toks handle Punt => ph2 toks
+
+fun (ph1 --- ph2) toks =
+  let val (x, toks2) = ph1 toks
+      val (y, toks3) = ph2 toks2
+  in ((x, y), toks3) end
+
+fun (ph >>> f) toks =
+  let val (x, toks2) = ph toks
+  in (f x, toks2) end*)
+
+
+(*
 fun dType ph =
   case ph of
        (DATATYPE :: ID s :: EQUAL :: rest) => (Datatype (Id s, parseTypeDef rest))
-     | _                                   => raise Punt
+   | _                                   => raise Punt
 
 and parseTypeDef ls =
   case ls of
        (ID s :: PIPE :: rest) => (Enum s :: parseTypeDef rest, rest)
      | (ID s :: rest)         => ([Enum s], rest)
 
+and parseTypeDef' ls =
+  case ls of
+       (ID s :: rest) => (Enum s, rest)*)
 
+(*****************************************************************************)
 
-(*datatype partree = Val of string * partree | Num of int | Id of string*)
+exception SyntaxError of string
 
-(*
-fun (ph1 ||| ph2) toks = ph1 toks handle Punt => ph2 toks
+(* The parser combinators *)
+(*infix 6 $-*)
+infix 5 --
+infix 3 >>
+infix 0 ||
 
-fun (ph1 --- ph2) toks =
+fun empty toks = ([], toks)
+
+fun (ph1 || ph2) toks = ph1 toks handle SyntaxError _ => ph2 toks
+
+fun !! ph toks = ph toks handle SyntaxError msg =>
+                         raise Fail ("Syntax error: " ^ msg)
+
+fun (ph1 -- ph2) toks =
   let val (a, toks2) = ph1 toks
       val (b, toks3) = ph2 toks2
-  in ((a,b), toks3) end
+  in ((a, b), toks3) end
 
-fun num ph =
-  case ph of
-       (NUM n :: rest) => (Num n, rest)
-     | _               => raise Punt
+fun (ph >> f) toks =
+  let val (x, toks2) = ph toks
+  in (f x, toks2) end
 
-fun id ph =
-  case ph of
-       (ID s :: rest) => (Id s, rest)
-     | _              => raise Punt
-     *)
-(* Checks that there are no excess data when the parse finishes and handles
-   top-level punts, raising ParserError exception. *)
-fun parse_list parser stream =
-  (case parser stream of
-        (result, []) => result
-      | _            => raise ParserError) handle Punt => raise ParserError
+(* Parse with ph on toks zero or more times *)
+fun repeat ph toks = (ph -- repeat ph >> (op::) || empty) toks
+
+(*fun infixes (ph, prec_of, apply) =
+  let fun over k toks = next k (ph toks)
+      and next k (x, Lex.Key(a)::toks) =
+             if prec_of a < k then (x, Lex.Key a :: toks)
+             else next k ((over (prec_of a) >> apply a x) toks)
+        | next k (x, toks) = (x, toks)
+  in over 0 end
+
+fun reader ph a =
+  (case ph (Lex.scan a) of
+        (x, [])   => x
+      | (_, _::_) => raise SyntaxError "Extra characters in phrase")*)
+
+datatype id = Id of string
+
+datatype typeDef = Enum of string
+                 | Tuple of string * string list
+
+datatype decl = Datatype of id * typeDef list
 
 
-(*
-(* The 'or'-combinator: ph1 ||| ph2 will first try to parse with ph1. If ph1
-   succedes, this result is returned, else it tries ph2. *)
-fun ph1 ||| ph2 =
-  fn stream => ph1 stream
-    handle Punt => ph2 stream
+fun dType (DATATYPE :: ID s :: EQUAL :: toks) = (Id s, toks)
+  | dType _ = raise SyntaxError "Datatype declaration expected"
 
-(* The 'and'-combinator: ph1 -- ph2 first parses with ph1 and then with ph2 on
-   the stream remining from ph1. It returns the pair of the result. *)
-fun ph1 -- ph2 = (fn stream =>
-  let val (a, stream1) = ph1 stream
-      val (b, stream2) = ph2 stream1
-  in
-    ((a, b), stream2)
-  end)
 
-(* The application operator: ph >>> f first uses ph to parse the stream into 
-   (x, rest), but the final result will be (f x, rest). *)
-fun ph >>> f = fn stream =>
-  let val (x, stream) = ph stream
-  in (f x, rest) end
-*)
+fun enum (ID s :: PIPE :: toks) = (Enum s, toks)
+  | enum (ID s :: toks)         = (Enum s, toks)
+  | enum _ = raise SyntaxError "enum datatype constructor expected"
+
+fun 
+
+fun makeDatatype (n, ls) = Datatype (n, ls)
+
+fun decl toks =
+  (   dType -- repeat enum  >> makeDatatype
+  ) toks
+
+
+(*fun idPipe (ID s :: PIPE :: toks) = (Id s, toks)
+  | idPipe _ = raise SyntaxError "| Identifier expected"
+
+fun id (ID s :: toks) = (Id s, toks)
+  | id _ = raise SyntaxError "Identifier expected"*)
