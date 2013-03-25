@@ -108,19 +108,6 @@ fun ph1 $- ph2 = (ph1 -- ph2) >> (fn (_, y) => y)
 
 fun ph1 -$ ph2 = (ph1 -- ph2) >> (fn (x, _) => x)
 
-(*fun infixes (ph, prec_of, apply) =
-  let fun over k toks = next k (ph toks)
-      and next k (x, Lex.Key(a)::toks) =
-             if prec_of a < k then (x, Lex.Key a :: toks)
-             else next k ((over (prec_of a) >> apply a x) toks)
-        | next k (x, toks) = (x, toks)
-  in over 0 end
-
-fun reader ph a =
-  (case ph (Lex.scan a) of
-        (x, [])   => x
-      | (_, _::_) => raise SyntaxError "Extra characters in phrase")*)
-
 
 datatype partree = Decl of decl | NA
 
@@ -191,3 +178,21 @@ and expr toks =
     || lparen $- expr -- repeat (comma $- expr) -$ rparen     >> makeTuple
     || lbracket $- expr -- repeat (comma $- expr) -$ rbracket >> makeList
   ) toks
+
+fun parse toks =
+  case decl toks of
+       (tree, []) => [tree]
+     | (tree, ls) => tree :: (parse ls)
+
+
+(*fun infixes (ph, prec_of, apply) =
+  let fun over k toks = next k (ph toks)
+      and next k (x, Lex.Key(a)::toks) =
+             if prec_of a < k then (x, Lex.Key a :: toks)
+             else next k ((over (prec_of a) >> apply a x) toks)
+        | next k (x, toks) = (x, toks)
+  in over 0 end
+fun reader ph a =
+  (case ph (Lex.scan a) of
+        (x, [])   => x
+      | (_, _::_) => raise SyntaxError "Extra characters in phrase")*)
