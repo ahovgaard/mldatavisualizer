@@ -1,24 +1,16 @@
-(* Parser combinator for Standard ML data structures and datatype declarations.
- * TODO:
- * - Substring.all / Substring.full, in scan function, depending on the SML
- *   implementation (I think).
- * (- Handle symbols not defined in symbTok function, might return Option
- *   exception.)
- * - Handle parsing of symbols like "__)" as [ID "__", RPAREN].
+(*
+ * Parser combinator for Standard ML data structures and datatype declarations.
  *)
 
-(*datatype exp = Id of string     | Num of int
-             | Add of exp * exp | Sub of exp * exp
-             | Mul of exp * exp*)
-
-(* exception for catching internal errors in the lexer *)
+(* Exception for catching internal errors in the lexer *)
 exception InternalError
 
-(* datatype of tokens for lexing *)
+(* Datatype of tokens for lexing *)
 datatype token = ID of string       | NUM of int        | VAL 
                | EQUAL              | NEQUAL            | LPAREN
                | RPAREN             | DATATYPE          | TYPE
-               | COMMA              | PIPE
+               | COMMA              | PIPE              | LBRACKET
+               | RBRACKET           | LBRACE            | RBRACE
 
 fun alphaTok str =
   case str of
@@ -35,6 +27,10 @@ fun symbolic str =
      | "="  => SOME EQUAL
      | "<>" => SOME NEQUAL
      | "|"  => SOME PIPE
+     | "["  => SOME LBRACKET
+     | "]"  => SOME RBRACKET
+     | "{"  => SOME LBRACE
+     | "}"  => SOME RBRACE
      | _    => NONE
 
 fun symbTok (str, ss) =
@@ -76,77 +72,15 @@ fun scan str = scanning ([], Substring.all str)
 
 val test_symb0 = scan "val test = (123, 42)" =
   [VAL, ID "test", EQUAL, LPAREN, NUM 123, COMMA, NUM 42, RPAREN]
-val test_symb1 = scan "val ? = (hej, 43, __)" (* =
+val test_symb1 = scan "val ? = (hej, 43, __)"  =
   [VAL, ID "?", EQUAL, LPAREN, ID "hej", COMMA, NUM 43, COMMA, ID "__",
-  RPAREN]*)
-
-
-
-(******************************************************************************)
-(* Parser combinator :: The actual parser *)
-(*exception Punt (* backtracking *)
-exception ParserError (* failed to parse input stream *)
-
-datatype id = Id of string
-
-datatype typeDef = Enum of string
-
-datatype decl = Datatype of string
-
-(*datatype decl = Datatype of id * typeDef list*)
-
-fun id (ID s :: toks) = (Id s, toks)
-  | id toks           = raise Punt
-
-fun dType (DATATYPE :: ID s :: EQUAL :: toks) = (Datatype s, toks)
-  | dType toks                                = raise Punt
-
-fun enumPipe (ID s :: PIPE :: toks) = (Enum s, toks)
-  | enumPipe _                      = raise Punt
-
-fun enum (ID s :: toks) = (Enum s, toks)
-  | enum _              = raise Punt
-
-
-(*fun dType (DATATYPE :: ID s :: EQUAL :: ID s1 :: rest) =
-    (Datatype (Id s, [Enum s1]), rest)
-  | dType _ = raise Punt*)
-
-fun empty toks = ([], toks)
-
-fun (ph1 ||| ph2) toks = ph1 toks handle Punt => ph2 toks
-
-fun (ph1 --- ph2) toks =
-  let val (x, toks2) = ph1 toks
-      val (y, toks3) = ph2 toks2
-  in ((x, y), toks3) end
-
-fun (ph >>> f) toks =
-  let val (x, toks2) = ph toks
-  in (f x, toks2) end*)
-
-
-(*
-fun dType ph =
-  case ph of
-       (DATATYPE :: ID s :: EQUAL :: rest) => (Datatype (Id s, parseTypeDef rest))
-   | _                                   => raise Punt
-
-and parseTypeDef ls =
-  case ls of
-       (ID s :: PIPE :: rest) => (Enum s :: parseTypeDef rest, rest)
-     | (ID s :: rest)         => ([Enum s], rest)
-
-and parseTypeDef' ls =
-  case ls of
-       (ID s :: rest) => (Enum s, rest)*)
-
-(*****************************************************************************)
+   RPAREN]
 
 exception SyntaxError of string
 
 (* The parser combinators *)
-(*infix 6 $-*)
+infix 6 $-
+infix 6 -$
 infix 5 --
 infix 3 >>
 infix 0 ||
@@ -170,6 +104,10 @@ fun (ph >> f) toks =
 (* Parse with ph on toks zero or more times *)
 fun repeat ph toks = (ph -- repeat ph >> (op::) || empty) toks
 
+fun ph1 $- ph2 = (ph1 -- ph2) >> (fn (_, y) => y)
+
+fun ph1 -$ ph2 = (ph1 -- ph2) >> (fn (x, _) => x)
+
 (*fun infixes (ph, prec_of, apply) =
   let fun over k toks = next k (ph toks)
       and next k (x, Lex.Key(a)::toks) =
@@ -183,33 +121,73 @@ fun reader ph a =
         (x, [])   => x
       | (_, _::_) => raise SyntaxError "Extra characters in phrase")*)
 
-datatype id = Id of string
 
-datatype typeDef = Enum of string
-                 | Tuple of string * string list
+datatype partree = Decl of decl | NA
 
-datatype decl = Datatype of id * typeDef list
+and decl = Datatype of id * typeDef list
+         | Value of id * expr
 
+and typeDef = Enum of string
+            (*| Tuple of string * string list*)
 
-fun dType (DATATYPE :: ID s :: EQUAL :: toks) = (Id s, toks)
-  | dType _ = raise SyntaxError "Datatype declaration expected"
+and id = Id of string 
 
+and expr = Num of int
+         | Tuple of expr list
+         | List of expr list
 
-fun enum (ID s :: PIPE :: toks) = (Enum s, toks)
-  | enum (ID s :: toks)         = (Enum s, toks)
-  | enum _ = raise SyntaxError "enum datatype constructor expected"
-
-fun 
-
-fun makeDatatype (n, ls) = Datatype (n, ls)
-
-fun decl toks =
-  (   dType -- repeat enum  >> makeDatatype
-  ) toks
-
-
-(*fun idPipe (ID s :: PIPE :: toks) = (Id s, toks)
-  | idPipe _ = raise SyntaxError "| Identifier expected"
 
 fun id (ID s :: toks) = (Id s, toks)
-  | id _ = raise SyntaxError "Identifier expected"*)
+  | id _ = raise SyntaxError "Identifier expected"
+
+fun dType (DATATYPE :: toks) = (NA, toks)
+  | dType _ = raise SyntaxError "Datatype declaration expected"
+
+fun equal (EQUAL :: toks) = (NA, toks)
+  | equal _ = raise SyntaxError "Equal sign expected"
+
+fun pipe (PIPE :: toks) = (NA, toks)
+  | pipe _ = raise SyntaxError "Pipe expected"
+
+fun value (VAL :: toks) = (NA, toks)
+  | value _ = raise SyntaxError "Value declaration expected"
+
+fun num (NUM n :: toks) = (Num n, toks)
+  | num _ = raise SyntaxError "Number expected"
+
+fun lparen (LPAREN :: toks) = (NA, toks)
+  | lparen _ = raise SyntaxError "Left parenthesis expected"
+
+fun rparen (RPAREN :: toks) = (NA, toks)
+  | rparen _ = raise SyntaxError "Right parenthesis expected"
+
+fun comma (COMMA :: toks) = (NA, toks)
+  | comma _ = raise SyntaxError "Comma expected"
+
+fun lbracket (LBRACKET :: toks) = (NA, toks)
+  | lbracket _ = raise SyntaxError "Left bracket expected"
+
+fun rbracket (RBRACKET :: toks) = (NA, toks)
+  | rbracket _ = raise SyntaxError "Right bracket expected"
+
+
+fun makeDatatype ((n, c), cs) =
+  let val enums = map (fn Id n => Enum n) (c :: cs)
+  in Decl(Datatype(n, enums)) end
+
+fun makeValue (n, exp) = Decl (Value (n, exp))
+
+fun makeTuple (exp, exps) = Tuple (exp :: exps)
+
+fun makeList (exp, exps) = List (exp :: exps)
+
+fun decl toks =
+  (    dType $- id -- equal $- id -- repeat (pipe $- id) >> makeDatatype
+    || value $- id -- equal $- expr                      >> makeValue
+  ) toks
+
+and expr toks =
+  (    num
+    || lparen $- expr -- repeat (comma $- expr) -$ rparen     >> makeTuple
+    || lbracket $- expr -- repeat (comma $- expr) -$ rbracket >> makeList
+  ) toks
