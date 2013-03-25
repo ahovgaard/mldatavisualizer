@@ -9,6 +9,6 @@ sig
                  | COMMA              | PIPE              | LBRACKET
                  | RBRACKET           | LBRACE            | RBRACE
 
-  scan : string -> token list
+  val scan : string -> token list
 
 end
