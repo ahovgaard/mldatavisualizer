@@ -16,13 +16,13 @@ struct
            | Value of id * expr
 
   and typeDef = Enum of string
-              (*| Tuple of string * string list*)
 
   and id = Id of string 
 
   and expr = Num of int
            | Tuple of expr list
            | List of expr list
+           | Record of (id * expr) list
 
   fun alphaTok str =
     case str of
@@ -120,6 +120,7 @@ struct
   fun ph1 -$ ph2 = (ph1 -- ph2) >> (fn (x, _) => x)
 
 
+  (* Parser functions *)
   fun id (ID s :: toks) = (Id s, toks)
     | id _ = raise SyntaxError "Identifier expected"
 
@@ -153,7 +154,13 @@ struct
   fun rbracket (RBRACKET :: toks) = (NA, toks)
     | rbracket _ = raise SyntaxError "Right bracket expected"
 
+  fun lbrace (LBRACE :: toks) = (NA, toks)
+    | lbrace _ = raise SyntaxError "Left brace expected"
 
+  fun rbrace (RBRACE:: toks) = (NA, toks)
+    | rbrace _ = raise SyntaxError "Right brace expected"
+
+  (* Functions for contructing partree types *)
   fun makeDatatype ((n, c), cs) =
     let val enums = map (fn Id n => Enum n) (c :: cs)
     in Decl(Datatype(n, enums)) end
@@ -164,6 +171,9 @@ struct
 
   fun makeList (exp, exps) = List (exp :: exps)
 
+  fun makeRecord ((id, exp), idExps) = Record ((id, exp) :: idExps)
+
+  (* Grammar definition *)
   fun decl toks =
     (    dType $- id -- equal $- id -- repeat (pipe $- id) >> makeDatatype
       || value $- id -- equal $- expr                      >> makeValue
@@ -173,8 +183,11 @@ struct
     (    num
       || lparen $- expr -- repeat (comma $- expr) -$ rparen     >> makeTuple
       || lbracket $- expr -- repeat (comma $- expr) -$ rbracket >> makeList
+      || lbrace $- id -- equal $- expr -- repeat
+           (comma $- id -- equal $- expr) -$ rbrace             >> makeRecord
     ) toks
 
+  (* Parsing function *)
   fun parse toks =
     case decl toks of
          (tree, []) => [tree]

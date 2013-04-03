@@ -16,13 +16,13 @@ sig
            | Value of id * expr
 
   and typeDef = Enum of string
-              (*| Tuple of string * string list*)
 
   and id = Id of string 
 
   and expr = Num of int
            | Tuple of expr list
            | List of expr list
+           | Record of (id * expr) list
 
   val scan : string -> token list
 
