@@ -194,3 +194,9 @@ struct
        | (tree, ls) => tree :: (parse ls)
 
 end
+
+  val test_symb0 = ParserCombinator.scan "val test = (123, 42)" =
+    [VAL, ID "test", EQUAL, LPAREN, NUM 123, COMMA, NUM 42, RPAREN]
+  val test_symb1 = ParserCombinator.scan "val ? = (hej, 43, __)"  =
+    [VAL, ID "?", EQUAL, LPAREN, ID "hej", COMMA, NUM 43, COMMA, ID "__",
+     RPAREN]

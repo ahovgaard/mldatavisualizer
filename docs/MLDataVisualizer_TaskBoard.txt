@@ -1,0 +1,47 @@
+--------------------------------------------------------------------------------
+-- Rules
+--------------------------------------------------------------------------------
+
+  1. Never push to the main branch except MLDV taskboard.
+       1.1 Commit when starting a task.
+       1.2 Commit when finishing a task and add time spent.
+
+  2. When undertaking a new task, make a new branch.
+
+  3. When done with a task, make a pull request to main and wait.
+  
+
+--------------------------------------------------------------------------------
+-- TODO / Taskboard
+--------------------------------------------------------------------------------
+
+Task structured into units:
+  * ParserCombinator
+    - Support for comments (nested comments)         2.0h
+    - Evaluation of expression                       2.0h
+    - Correct lexing of multiple character symbol    3.0h
+    - Parsing of strings                             1.0h
+    - Parsing of characters                          0.5h
+    - Support for weird chars and strings            1.0h
+    - Only allow homogenius lists                    2.0h
+
+  * Syntax tree processing
+    -
+
+  * Image
+    -
+
+  * User interface
+    -
+
+--------------------------------------------------------------------------------
+-- In progress
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- Finished
+--------------------------------------------------------------------------------
+  
+  Task                                               Est. time      Time spent
+
+
