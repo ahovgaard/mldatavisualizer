@@ -4,11 +4,12 @@ struct
   exception InternalError
   exception SyntaxError of string
 
-  datatype token = ID of string       | NUM of int        | VAL
-                 | EQUAL              | NEQUAL            | LPAREN
-                 | RPAREN             | DATATYPE          | TYPE
-                 | COMMA              | PIPE              | LBRACKET
-                 | RBRACKET           | LBRACE            | RBRACE
+  datatype token = ID of string  | NUM of int  | STRING of string
+                 | VAL           | EQUAL       | NEQUAL
+                 | LPAREN        | RPAREN      | DATATYPE
+                 | TYPE          | COMMA       | PIPE
+                 | LBRACKET      | RBRACKET    | LBRACE
+                 | RBRACE
 
   datatype partree = Decl of decl | NA
 
@@ -20,6 +21,7 @@ struct
   and id = Id of string 
 
   and expr = Num of int
+           | Str of string
            | Tuple of expr list
            | List of expr list
            | Record of (id * expr) list
@@ -73,6 +75,12 @@ struct
                 let val (id, ss2) = Substring.splitl Char.isAlphaNum ss
                     val tok       = alphaTok (Substring.string id)
                 in scanning (tok::toks, ss2) end
+           else if c = #"\""
+           then (* string *)
+                let val (ssStr, ss2) = Substring.position "\"" ss1
+                    val ss3          = Substring.dropl (fn c => c = #"\"") ss2
+                    val tok          = STRING (Substring.string ssStr)
+                in scanning (tok::toks, ss3) end
            else if Char.isPunct c
            then (* special symbol *)
                 let val (tok, ss2) = symbTok (String.str c, ss1)
@@ -82,6 +90,8 @@ struct
 
   fun scan str = scanning ([], Substring.all str)
 
+
+  (* Tests *)
   val test_symb0 = scan "val test = (123, 42)" =
     [VAL, ID "test", EQUAL, LPAREN, NUM 123, COMMA, NUM 42, RPAREN]
   val test_symb1 = scan "val ? = (hej, 43, __)"  =
@@ -139,6 +149,9 @@ struct
   fun num (NUM n :: toks) = (Num n, toks)
     | num _ = raise SyntaxError "Number expected"
 
+  fun str (STRING s :: toks) = (Str s, toks)
+    | str _ = raise SyntaxError "String expected"
+
   fun lparen (LPAREN :: toks) = (NA, toks)
     | lparen _ = raise SyntaxError "Left parenthesis expected"
 
@@ -181,6 +194,7 @@ struct
 
   and expr toks =
     (    num
+      || str
       || lparen $- expr -- repeat (comma $- expr) -$ rparen     >> makeTuple
       || lbracket $- expr -- repeat (comma $- expr) -$ rbracket >> makeList
       || lbrace $- id -- equal $- expr -- repeat
@@ -194,9 +208,3 @@ struct
        | (tree, ls) => tree :: (parse ls)
 
 end
-
-  val test_symb0 = ParserCombinator.scan "val test = (123, 42)" =
-    [VAL, ID "test", EQUAL, LPAREN, NUM 123, COMMA, NUM 42, RPAREN]
-  val test_symb1 = ParserCombinator.scan "val ? = (hej, 43, __)"  =
-    [VAL, ID "?", EQUAL, LPAREN, ID "hej", COMMA, NUM 43, COMMA, ID "__",
-     RPAREN]

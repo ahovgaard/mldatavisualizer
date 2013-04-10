@@ -4,11 +4,12 @@ sig
   exception InternalError
   exception SyntaxError of string
 
-  datatype token = ID of string       | NUM of int        | VAL 
-                 | EQUAL              | NEQUAL            | LPAREN
-                 | RPAREN             | DATATYPE          | TYPE
-                 | COMMA              | PIPE              | LBRACKET
-                 | RBRACKET           | LBRACE            | RBRACE
+  datatype token = ID of string  | NUM of int  | STRING of string
+                 | VAL           | EQUAL       | NEQUAL
+                 | LPAREN        | RPAREN      | DATATYPE
+                 | TYPE          | COMMA       | PIPE
+                 | LBRACKET      | RBRACKET    | LBRACE
+                 | RBRACE
 
   datatype partree = Decl of decl | NA
 
@@ -20,6 +21,7 @@ sig
   and id = Id of string 
 
   and expr = Num of int
+           | Str of string
            | Tuple of expr list
            | List of expr list
            | Record of (id * expr) list
