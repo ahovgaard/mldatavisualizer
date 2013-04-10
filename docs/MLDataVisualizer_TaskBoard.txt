@@ -40,11 +40,13 @@
 
   Task                                              Est. time   Name
 
-  * ParserCombinator
-    - Parsing of strings                            1.0h        akh
 
 --------------------------------------------------------------------------------
 -- Finished
 --------------------------------------------------------------------------------
   
   Task                                              Est. time   Name    Spent
+
+  * ParserCombinator
+    - Parsing of strings                            1h          akh     1h
+
