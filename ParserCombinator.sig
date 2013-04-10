@@ -9,7 +9,8 @@ sig
                  | LPAREN        | RPAREN      | DATATYPE
                  | TYPE          | COMMA       | PIPE
                  | LBRACKET      | RBRACKET    | LBRACE
-                 | RBRACE
+                 | RBRACE        | OF          | ASTERISK
+                 | INT
 
   datatype partree = Decl of decl | NA
 

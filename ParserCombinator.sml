@@ -9,7 +9,8 @@ struct
                  | LPAREN        | RPAREN      | DATATYPE
                  | TYPE          | COMMA       | PIPE
                  | LBRACKET      | RBRACKET    | LBRACE
-                 | RBRACE
+                 | RBRACE        | OF          | ASTERISK
+                 | INT
 
   datatype partree = Decl of decl | NA
 
@@ -31,6 +32,8 @@ struct
          "val"      => VAL
        | "datatype" => DATATYPE
        | "type"     => TYPE
+       | "of"       => OF
+       | "int"      => INT
        | id         => ID id
 
   fun symbolic str =
@@ -45,6 +48,7 @@ struct
        | "]"  => SOME RBRACKET
        | "{"  => SOME LBRACE
        | "}"  => SOME RBRACE
+       | "*"  => SOME ASTERISK
        | _    => NONE
 
   fun symbTok (str, ss) =
