@@ -15,15 +15,15 @@
 -- TODO / Taskboard
 --------------------------------------------------------------------------------
 
-Task structured into units:
+  Task                                              Est. time
+
   * ParserCombinator
-    - Support for comments (nested comments)         2.0h
-    - Evaluation of expression                       2.0h
-    - Correct lexing of multiple character symbol    3.0h
-    - Parsing of strings                             1.0h
-    - Parsing of characters                          0.5h
-    - Support for weird chars and strings            1.0h
-    - Only allow homogenius lists                    2.0h
+    - Support for comments (nested comments)        2.0h
+    - Evaluation of expression                      2.0h
+    - Correct lexing of multiple character symbol   3.0h
+    - Parsing of characters                         0.5h
+    - Support for weird chars and strings           1.0h
+    - Only allow homogenius lists                   2.0h
 
   * Syntax tree processing
     -
@@ -38,10 +38,13 @@ Task structured into units:
 -- In progress
 --------------------------------------------------------------------------------
 
+  Task                                              Est. time   Name
+
+  * ParserCombinator
+    - Parsing of strings                            1.0h        akh
+
 --------------------------------------------------------------------------------
 -- Finished
 --------------------------------------------------------------------------------
   
-  Task                                               Est. time      Time spent
-
-
+  Task                                              Est. time   Name    Spent
