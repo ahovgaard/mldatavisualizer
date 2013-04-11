@@ -18,6 +18,11 @@ struct
            | Value of id * expr
 
   and typeDef = Enum of string
+              | Simple of string * typ
+              | TupleTyp of string * typ list
+
+  and typ = Int
+          | TyVar of string
 
   and id = Id of string 
 
@@ -174,13 +179,23 @@ struct
   fun lbrace (LBRACE :: toks) = (NA, toks)
     | lbrace _ = raise SyntaxError "Left brace expected"
 
-  fun rbrace (RBRACE:: toks) = (NA, toks)
+  fun rbrace (RBRACE :: toks) = (NA, toks)
     | rbrace _ = raise SyntaxError "Right brace expected"
 
+  fun ofType (OF :: toks) = (NA, toks)
+    | ofType _ = raise SyntaxError "Keyword 'of' expected"
+
+  fun intTy (INT :: toks) = (Int, toks)
+    | intTy _ = raise SyntaxError "Keyword 'int' expected"
+
+  fun enum (ID s :: toks) = (Enum s, toks)
+    | enum _ = raise SyntaxError "Enum type constuctor expected"
+
+  fun asterisk (ASTERISK :: toks) = (NA, toks)
+    | asterisk _ = raise SyntaxError "* expected"
+
   (* Functions for contructing partree types *)
-  fun makeDatatype ((n, c), cs) =
-    let val enums = map (fn Id n => Enum n) (c :: cs)
-    in Decl(Datatype(n, enums)) end
+  fun makeDatetype ((id, t), ts) = Decl(Datatype(id, t::ts))
 
   fun makeValue (n, exp) = Decl (Value (n, exp))
 
@@ -190,10 +205,11 @@ struct
 
   fun makeRecord ((id, exp), idExps) = Record ((id, exp) :: idExps)
 
+
   (* Grammar definition *)
   fun decl toks =
-    (    dType $- id -- equal $- id -- repeat (pipe $- id) >> makeDatatype
-      || value $- id -- equal $- expr                      >> makeValue
+    (    dType $- id -- equal $- typ -- repeat (pipe $- typ)   >> makeDatetype
+      || value $- id -- equal $- expr                          >> makeValue
     ) toks
 
   and expr toks =
@@ -204,6 +220,20 @@ struct
       || lbrace $- id -- equal $- expr -- repeat
            (comma $- id -- equal $- expr) -$ rbrace             >> makeRecord
     ) toks
+
+  and typ toks =
+    (   id -- ofType $- ty -- asterisk $- ty -- repeat (asterisk $- ty)
+           >> (fn (((Id n, t1), t2), ts) => TupleTyp(n, t1::t2::ts))
+      || id -- ofType $- ty >> (fn (Id n, ty) => Simple (n, ty))
+      || enum
+      (*|| tuple*)
+    ) toks
+
+  and ty toks =
+    (    intTy
+      || id    >> (fn Id n => TyVar n)
+    ) toks
+
 
   (* Parsing function *)
   fun parse toks =
