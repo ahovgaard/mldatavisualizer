@@ -9,7 +9,8 @@ sig
                  | LPAREN        | RPAREN      | DATATYPE
                  | TYPE          | COMMA       | PIPE
                  | LBRACKET      | RBRACKET    | LBRACE
-                 | RBRACE
+                 | RBRACE        | OF          | ASTERISK
+                 | INT
 
   datatype partree = Decl of decl | NA
 
@@ -17,6 +18,11 @@ sig
            | Value of id * expr
 
   and typeDef = Enum of string
+              | Simple of string * typ
+              | TupleTyp of string * typ list
+
+  and typ = Int
+          | TyVar of string
 
   and id = Id of string 
 
