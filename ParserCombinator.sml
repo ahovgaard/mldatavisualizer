@@ -1,86 +1,75 @@
 structure ParserCombinator :> PARSER_COMBINATOR =
 struct
 
-  exception InternalError
+  exception InternalError 
   exception SyntaxError of string
 
-  datatype token = ID of string  | NUM of int  | STRING of string
-                 | VAL           | EQUAL       | NEQUAL
-                 | LPAREN        | RPAREN      | DATATYPE
-                 | TYPE          | COMMA       | PIPE
-                 | LBRACKET      | RBRACKET    | LBRACE
-                 | RBRACE        | OF          | ASTERISK
-                 | INT
+  (* Alphanumeric and symbolic keywords *)
+  val keywords = ["datatype", "withtype", "and", "of", "val", "int", "real"]
+  val symbols  = ["=", "|", "*", "(", ")", "[", "]", "{", "}", ","]
 
-  datatype partree = Decl of decl | NA
+  (* Datatype for lexer tokens *)
+  datatype token = KEY of string
+                 | ID of string
+                 | INT of int
+                 | REAL of real
+                 | STRING of string
 
-  and decl = Datatype of id * typeDef list
-           | Value of id * expr
+  (* Parse tree datatypes *)
+  datatype partree = Value of string * expr
+                   | Datatype of string * typeDef list
 
-  and typeDef = Enum of string
-              | Simple of string * typ
-              | TupleTyp of string * typ list
-
-  and typ = Int
-          | TyVar of string
-
-  and id = Id of string 
-
-  and expr = Num of int
-           | Str of string
+  and expr = Int of int
+           | Real of real
+           | String of string
            | Tuple of expr list
            | List of expr list
-           | Record of (id * expr) list
+           | Record of (string * expr) list
 
-  fun alphaTok str =
-    case str of
-         "val"      => VAL
-       | "datatype" => DATATYPE
-       | "type"     => TYPE
-       | "of"       => OF
-       | "int"      => INT
-       | id         => ID id
+  and typeDef = NullaryCon of string
+              | UnaryCon of string * typ
+              | MultaryCon of string * typ list
 
-  fun symbolic str =
-    case str of
-         "("  => SOME LPAREN
-       | ")"  => SOME RPAREN
-       | ","  => SOME COMMA
-       | "="  => SOME EQUAL
-       | "<>" => SOME NEQUAL
-       | "|"  => SOME PIPE
-       | "["  => SOME LBRACKET
-       | "]"  => SOME RBRACKET
-       | "{"  => SOME LBRACE
-       | "}"  => SOME RBRACE
-       | "*"  => SOME ASTERISK
-       | _    => NONE
+  and typ = IntTyp
+          | RealTyp
+          | Tyvar of string
 
+  (* Check if s is a member of the list ls *)
+  fun member s ls = List.exists (fn n => n = s) ls
+
+  (* Given an alphanumeical string a, construct a Key type token if a is member
+     of the list keywords, else construct an Id type token. *)
+  fun alphaTok a = if member a keywords then KEY a else ID a 
+
+  (* Construct a symbolic keyword or identifier *)
   fun symbTok (str, ss) =
-    let val symb = symbolic str
-        val isSymb = isSome symb
-    in case Substring.getc ss of
-            NONE          => if isSymb then (valOf symb, ss)
-                             else (ID str, ss)
-          | SOME (c, ss1) => if isSymb orelse not (Char.isPunct c)
-                             then if isSymb then (valOf symb, ss)
-                                  else (ID str, ss)
-                             else symbTok (str ^ String.str c, ss1)
-    end
+    case Substring.getc ss of
+         NONE          => if member str symbols
+                          then (KEY str, ss) else (ID str, ss)
+       | SOME (c, ss1) => if member str symbols orelse not (Char.isPunct c)
+                          then (KEY str, ss)
+                          else symbTok (str ^ String.str c, ss1)
+
+  fun numTok str = if Char.contains str #"." orelse Char.contains str #"E"
+                   then case Real.fromString str of
+                             NONE   => raise InternalError
+                           | SOME n => REAL n
+                   else case Int.fromString str of
+                             NONE   => raise InternalError
+                           | SOME n => INT n
 
   fun scanning (toks, ss) =
     case Substring.getc ss of
-         NONE => rev toks (* nothing left to scan *)
+         NONE => rev toks (* end of substring, ie. nothing left to scan *)
        | SOME (c, ss1) =>
-           if Char.isDigit c
-           then (* numerals, just integers for now *)
-                let val (num, ss2) = Substring.splitl Char.isDigit ss
-                    val tok = (case Int.fromString(Substring.string num) of
-                                    NONE   => raise InternalError
-                                  | SOME n => NUM n)
+           if Char.isDigit c orelse c = #"~"
+           then (* numerals (reals and ints) *)
+                let val (num, ss2) = Substring.splitl
+                    (fn c => Char.isDigit c orelse member c (explode ".E~")) ss
+                  val tok = numTok (Substring.string num)
                 in scanning (tok::toks, ss2) end
            else if Char.isAlphaNum c
-           then (* identifier or keyword *)
+           then (* keyword or identifier *)
                 let val (id, ss2) = Substring.splitl Char.isAlphaNum ss
                     val tok       = alphaTok (Substring.string id)
                 in scanning (tok::toks, ss2) end
@@ -91,7 +80,7 @@ struct
                     val tok          = STRING (Substring.string ssStr)
                 in scanning (tok::toks, ss3) end
            else if Char.isPunct c
-           then (* special symbol *)
+           then (* symbol *)
                 let val (tok, ss2) = symbTok (String.str c, ss1)
                 in scanning (tok::toks, ss2) end
            else (* ignore spaces, line breaks, control characters *)
@@ -99,18 +88,8 @@ struct
 
   fun scan str = scanning ([], Substring.all str)
 
-
-  (* Tests *)
-  val test_symb0 = scan "val test = (123, 42)" =
-    [VAL, ID "test", EQUAL, LPAREN, NUM 123, COMMA, NUM 42, RPAREN]
-  val test_symb1 = scan "val ? = (hej, 43, __)"  =
-    [VAL, ID "?", EQUAL, LPAREN, ID "hej", COMMA, NUM 43, COMMA, ID "__",
-     RPAREN]
-
-
-  (* The parser combinators *)
-  infix 6 $-
-  infix 6 -$
+  (** The parser combinators *)
+  infix 6 $- -$
   infix 5 --
   infix 3 >>
   infix 0 ||
@@ -119,126 +98,75 @@ struct
 
   fun (ph1 || ph2) toks = ph1 toks handle SyntaxError _ => ph2 toks
 
-  fun !! ph toks = ph toks handle SyntaxError msg =>
-                           raise Fail ("Syntax error: " ^ msg)
-
   fun (ph1 -- ph2) toks =
-    let val (a, toks2) = ph1 toks
-        val (b, toks3) = ph2 toks2
-    in ((a, b), toks3) end
+    let val (x, toks')  = ph1 toks
+        val (y, toks'') = ph2 toks'
+    in ((x, y), toks'') end
 
   fun (ph >> f) toks =
-    let val (x, toks2) = ph toks
-    in (f x, toks2) end
+    let val (x, toks') = ph toks
+    in (f x, toks') end
+
+  fun ph1 $- ph2 = ph1 -- ph2 >> #2 (*(fn (_, y) => y)*)
+
+  fun ph1 -$ ph2 = ph1 -- ph2 >> #1 (*(fn (x, _) => x)*)
 
   (* Parse with ph on toks zero or more times *)
   fun repeat ph toks = (ph -- repeat ph >> (op::) || empty) toks
 
-  fun ph1 $- ph2 = (ph1 -- ph2) >> (fn (_, y) => y)
+  (** Simple parsers *)
+  fun id (ID s :: toks) = (s, toks)
+    | id _              = raise SyntaxError "Identifier expected"
 
-  fun ph1 -$ ph2 = (ph1 -- ph2) >> (fn (x, _) => x)
+  fun $ s1 (KEY s2 :: toks) = if s1 = s2 then (s2, toks) else
+                              raise SyntaxError ("Keyword " ^ s1 ^ " expected")
+    | $ _ _                 = raise SyntaxError "Keyword expected"
 
+  fun num (INT n :: toks)  = (Int n, toks)
+    | num (REAL n :: toks) = (Real n, toks)
+    | num _                = raise SyntaxError "Number expected"
 
-  (* Parser functions *)
-  fun id (ID s :: toks) = (Id s, toks)
-    | id _ = raise SyntaxError "Identifier expected"
+  fun str (STRING s :: toks) = (String s, toks)
+    | str _                  = raise SyntaxError "String expected"
 
-  fun dType (DATATYPE :: toks) = (NA, toks)
-    | dType _ = raise SyntaxError "Datatype declaration expected"
-
-  fun equal (EQUAL :: toks) = (NA, toks)
-    | equal _ = raise SyntaxError "Equal sign expected"
-
-  fun pipe (PIPE :: toks) = (NA, toks)
-    | pipe _ = raise SyntaxError "Pipe expected"
-
-  fun value (VAL :: toks) = (NA, toks)
-    | value _ = raise SyntaxError "Value declaration expected"
-
-  fun num (NUM n :: toks) = (Num n, toks)
-    | num _ = raise SyntaxError "Number expected"
-
-  fun str (STRING s :: toks) = (Str s, toks)
-    | str _ = raise SyntaxError "String expected"
-
-  fun lparen (LPAREN :: toks) = (NA, toks)
-    | lparen _ = raise SyntaxError "Left parenthesis expected"
-
-  fun rparen (RPAREN :: toks) = (NA, toks)
-    | rparen _ = raise SyntaxError "Right parenthesis expected"
-
-  fun comma (COMMA :: toks) = (NA, toks)
-    | comma _ = raise SyntaxError "Comma expected"
-
-  fun lbracket (LBRACKET :: toks) = (NA, toks)
-    | lbracket _ = raise SyntaxError "Left bracket expected"
-
-  fun rbracket (RBRACKET :: toks) = (NA, toks)
-    | rbracket _ = raise SyntaxError "Right bracket expected"
-
-  fun lbrace (LBRACE :: toks) = (NA, toks)
-    | lbrace _ = raise SyntaxError "Left brace expected"
-
-  fun rbrace (RBRACE :: toks) = (NA, toks)
-    | rbrace _ = raise SyntaxError "Right brace expected"
-
-  fun ofType (OF :: toks) = (NA, toks)
-    | ofType _ = raise SyntaxError "Keyword 'of' expected"
-
-  fun intTy (INT :: toks) = (Int, toks)
-    | intTy _ = raise SyntaxError "Keyword 'int' expected"
-
-  fun enum (ID s :: toks) = (Enum s, toks)
-    | enum _ = raise SyntaxError "Enum type constuctor expected"
-
-  fun asterisk (ASTERISK :: toks) = (NA, toks)
-    | asterisk _ = raise SyntaxError "* expected"
-
-  (* Functions for contructing partree types *)
-  fun makeDatetype ((id, t), ts) = Decl(Datatype(id, t::ts))
-
-  fun makeValue (n, exp) = Decl (Value (n, exp))
-
-  fun makeTuple (exp, exps) = Tuple (exp :: exps)
-
-  fun makeList (exp, exps) = List (exp :: exps)
-
-  fun makeRecord ((id, exp), idExps) = Record ((id, exp) :: idExps)
-
-
-  (* Grammar definition *)
+  (** Grammar definitions *)
+  (* Declarations *)
   fun decl toks =
-    (    dType $- id -- equal $- typ -- repeat (pipe $- typ)   >> makeDatetype
-      || value $- id -- equal $- expr                          >> makeValue
+    (    $"val" $- id -$ $"=" -- expr >> Value
+      || $"datatype" $- id -$ $"=" -- (datbind -- repeat ($"|" $- datbind))
+           >> (fn (str, (ty, tys)) => Datatype (str, ty::tys))
+           (* FIXME: ^ could be prettier, Datatype (#1, op:: #2)*)
     ) toks
 
+  (* Expressions *)
   and expr toks =
     (    num
       || str
-      || lparen $- expr -- repeat (comma $- expr) -$ rparen     >> makeTuple
-      || lbracket $- expr -- repeat (comma $- expr) -$ rbracket >> makeList
-      || lbrace $- id -- equal $- expr -- repeat
-           (comma $- id -- equal $- expr) -$ rbrace             >> makeRecord
+      || $"(" $- expr -- repeat ($"," $- expr) -$ $")" >> (Tuple o op::)
+      || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
+      || $"{" $- id -$ $"=" -- expr --
+           repeat ($"," $- id -$ $"=" -- expr) -$ $"}" >> (Record o op::)
     ) toks
 
+  (* Datatype binding *)
+  and datbind toks =
+    (    id -$ $"of" -- (typ -$ $"*" -- typ -- repeat ( $"*" $- typ))
+           >> (fn (str, ((t0, t1), ts)) => MultaryCon (str, t0::t1::ts))
+      || id -$ $"of" -- typ >> UnaryCon
+      || id                 >> NullaryCon
+    ) toks
+
+  (* Type expressions *)
   and typ toks =
-    (   id -- ofType $- ty -- asterisk $- ty -- repeat (asterisk $- ty)
-           >> (fn (((Id n, t1), t2), ts) => TupleTyp(n, t1::t2::ts))
-      || id -- ofType $- ty >> (fn (Id n, ty) => Simple (n, ty))
-      || enum
-      (*|| tuple*)
+    (    $"int"  >> (fn s => IntTyp) (*FIXME: improve weird looking fn*)
+      || $"real" >> (fn s => RealTyp)
+      || id      >> Tyvar
     ) toks
 
-  and ty toks =
-    (    intTy
-      || id    >> (fn Id n => TyVar n)
-    ) toks
-
-
-  (* Parsing function *)
+  (** Parsing function *)
   fun parse toks =
     case decl toks of
          (tree, []) => [tree]
-       | (tree, ls) => tree :: (parse ls)
+       | (tree, ls) => tree :: parse ls
 
 end
