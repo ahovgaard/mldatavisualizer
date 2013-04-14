@@ -40,9 +40,6 @@
 
   Task                                              Est. time   Name
 
-  * ParserCombinator
-    - Parsing of tuple type constructors            1h          akh
-
 
 --------------------------------------------------------------------------------
 -- Finished
@@ -52,4 +49,5 @@
 
   * ParserCombinator
     - Parsing of strings                            1h          akh     1h
+    - Parsing of tuple type constructors            1h          akh     1h30m
 
