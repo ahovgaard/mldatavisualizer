@@ -1,36 +1,32 @@
 signature PARSER_COMBINATOR =
 sig
 
-  exception InternalError
+  exception InternalError 
   exception SyntaxError of string
 
-  datatype token = ID of string  | NUM of int  | STRING of string
-                 | VAL           | EQUAL       | NEQUAL
-                 | LPAREN        | RPAREN      | DATATYPE
-                 | TYPE          | COMMA       | PIPE
-                 | LBRACKET      | RBRACKET    | LBRACE
-                 | RBRACE        | OF          | ASTERISK
-                 | INT
+  datatype token = KEY of string
+                 | ID of string
+                 | INT of int
+                 | REAL of real
+                 | STRING of string
 
-  datatype partree = Decl of decl | NA
+  datatype partree = Value of string * expr
+                   | Datatype of string * typeDef list
 
-  and decl = Datatype of id * typeDef list
-           | Value of id * expr
-
-  and typeDef = Enum of string
-              | Simple of string * typ
-              | TupleTyp of string * typ list
-
-  and typ = Int
-          | TyVar of string
-
-  and id = Id of string 
-
-  and expr = Num of int
-           | Str of string
+  and expr = Int of int
+           | Real of real
+           | String of string
            | Tuple of expr list
            | List of expr list
-           | Record of (id * expr) list
+           | Record of (string * expr) list
+
+  and typeDef = NullaryCon of string
+              | UnaryCon of string * typ
+              | MultaryCon of string * typ list
+
+  and typ = IntTyp
+          | RealTyp
+          | Tyvar of string
 
   val scan : string -> token list
 
