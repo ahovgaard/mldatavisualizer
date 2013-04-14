@@ -13,6 +13,7 @@ struct
                  | ID of string
                  | INT of int
                  | REAL of real
+                 | STRING of string
 
   (* Parse tree datatypes *)
   datatype partree = Value of string * expr
@@ -20,6 +21,7 @@ struct
 
   and expr = Int of int
            | Real of real
+           | String of string
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
@@ -71,6 +73,12 @@ struct
                 let val (id, ss2) = Substring.splitl Char.isAlphaNum ss
                     val tok       = alphaTok (Substring.string id)
                 in scanning (tok::toks, ss2) end
+           else if c = #"\""
+           then (* string *)
+                let val (ssStr, ss2) = Substring.position "\"" ss1
+                    val ss3          = Substring.dropl (fn c => c = #"\"") ss2
+                    val tok          = STRING (Substring.string ssStr)
+                in scanning (tok::toks, ss3) end
            else if Char.isPunct c
            then (* symbol *)
                 let val (tok, ss2) = symbTok (String.str c, ss1)
@@ -118,6 +126,9 @@ struct
     | num (REAL n :: toks) = (Real n, toks)
     | num _                = raise SyntaxError "Number expected"
 
+  fun str (STRING s :: toks) = (String s, toks)
+    | str _                  = raise SyntaxError "String expected"
+
   (** Grammar definitions *)
   (* Declarations *)
   fun decl toks =
@@ -130,6 +141,7 @@ struct
   (* Expressions *)
   and expr toks =
     (    num
+      || str
       || $"(" $- expr -- repeat ($"," $- expr) -$ $")" >> (Tuple o op::)
       || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
       || $"{" $- id -$ $"=" -- expr --

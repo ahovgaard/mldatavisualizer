@@ -8,12 +8,14 @@ sig
                  | ID of string
                  | INT of int
                  | REAL of real
+                 | STRING of string
 
   datatype partree = Value of string * expr
                    | Datatype of string * typeDef list
 
   and expr = Int of int
            | Real of real
+           | String of string
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
