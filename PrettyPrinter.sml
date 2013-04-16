@@ -23,18 +23,18 @@ struct
        | Real n    => Real.toString n
        | String s  => s
        | Tuple es  =>
-           "(" ^ foldl op^ "" (map (fn x => showExpr x ^ ", ") es) ^ ")"
+           "(" ^ foldr op^ "" (map (fn x => showExpr x ^ ", ") es) ^ ")"
        | List es   =>
-           "[" ^ foldl op^ "" (map (fn x => showExpr x ^ ", ") es) ^ "]"
+           "[" ^ foldr op^ "" (map (fn x => showExpr x ^ ", ") es) ^ "]"
        | Record es =>
-           "{" ^ foldl op^ "" (map (fn (n,e) => n ^ " = " ^ showExpr e) es) ^ "}"
+           "{" ^ foldr op^ "" (map (fn (n,e) => n ^ " = " ^ showExpr e) es) ^ "}"
 
   and showTydef tree =
     case tree of
          NullaryCon s       => s
        | UnaryCon (s, t)    => s ^ " of " ^ showTyp t
        | MultaryCon (s, ts) =>
-           s ^ " of " ^ foldl op^ ""(map (fn t => showTyp t ^ " * ") ts)
+           s ^ " of " ^ foldr op^ ""(map (fn t => showTyp t ^ " * ") ts)
 
   and showTyp tree =
     case tree of
