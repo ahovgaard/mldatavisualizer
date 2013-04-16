@@ -22,12 +22,12 @@ struct
          Int n     => Int.toString n
        | Real n    => Real.toString n
        | String s  => s
-       | Tuple es  => "(" ^ foldl op^ "" (map (fn x => showExpr x ^ ", ") es)
-                      ^ ")"
-       | List es   => "[" ^ foldl op^ "" (map (fn x => showExpr x ^ ", ") es)
-                      ^ "]"
-       | Record es => "{" ^ foldl op^ "" (map (fn (n,e) => n ^ " = "
-                      ^ showExpr e) es) ^ "}"
+       | Tuple es  =>
+           "(" ^ foldl op^ "" (map (fn x => showExpr x ^ ", ") es) ^ ")"
+       | List es   =>
+           "[" ^ foldl op^ "" (map (fn x => showExpr x ^ ", ") es) ^ "]"
+       | Record es =>
+           "{" ^ foldl op^ "" (map (fn (n,e) => n ^ " = " ^ showExpr e) es) ^ "}"
 
   and showTydef tree =
     case tree of
