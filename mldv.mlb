@@ -1,0 +1,8 @@
+(* import libraries *)
+$(SML_LIB)/basis/basis.mlb
+
+(* program files *)
+ParserCombinator.sig
+ParserCombinator.sml
+PrettyPrinter.sml
+Main.sml
