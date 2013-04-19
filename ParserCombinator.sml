@@ -82,9 +82,10 @@ struct
                     val tok          = STRING (Substring.string ssStr)
                 in scanning (tok::toks, ss3) end
            else if Char.isGraph c
-           then (* char *)
+           then (* char - kinda hacky, does not work when the char is located
+           last  *)
                 let val ss2 = Substring.string ss1
-                    val chr = String.sub(String.substring(ss2, 2, 1), 0)
+                    val chr = String.sub(String.substring(ss2, 1, 1), 0)
                     val tok = CHAR chr
                     val ss3 = Substring.substring(ss2, 4, String.size ss2 - 4)
                 in scanning (tok::toks, ss3) end
