@@ -14,6 +14,7 @@ struct
                  | INT of int
                  | REAL of real
                  | STRING of string
+                 | CHAR of char
 
   (* Parse tree datatypes *)
   datatype partree = Value of string * expr
@@ -22,6 +23,7 @@ struct
   and expr = Int of int
            | Real of real
            | String of string
+           | Char of char
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
@@ -79,6 +81,13 @@ struct
                     val ss3          = Substring.dropl (fn c => c = #"\"") ss2
                     val tok          = STRING (Substring.string ssStr)
                 in scanning (tok::toks, ss3) end
+           else if Char.isGraph c
+           then (* char *)
+                let val ss2 = Substring.string ss1
+                    val chr = String.sub(String.substring(ss2, 2, 1), 0)
+                    val tok = CHAR chr
+                    val ss3 = Substring.substring(ss2, 4, String.size ss2 - 4)
+                in scanning (tok::toks, ss3) end
            else if Char.isPunct c
            then (* symbol *)
                 let val (tok, ss2) = symbTok (String.str c, ss1)
@@ -86,7 +95,7 @@ struct
            else (* ignore spaces, line breaks, control characters *)
                 scanning (toks, Substring.dropl (not o Char.isGraph) ss)
 
-  fun scan str = scanning ([], Substring.full str)
+  fun scan str = scanning ([], Substring.all str)
 
   (** The parser combinators *)
   infix 6 $- -$

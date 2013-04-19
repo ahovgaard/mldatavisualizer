@@ -9,6 +9,7 @@ sig
                  | INT of int
                  | REAL of real
                  | STRING of string
+                 | CHAR of char
 
   datatype partree = Value of string * expr
                    | Datatype of string * typeDef list
@@ -16,6 +17,7 @@ sig
   and expr = Int of int
            | Real of real
            | String of string
+           | Char of char
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
