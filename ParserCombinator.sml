@@ -14,6 +14,7 @@ struct
                  | INT of int
                  | REAL of real
                  | STRING of string
+                 | CHAR of char
 
   (* Parse tree datatypes *)
   datatype partree = Value of string * expr
@@ -22,6 +23,7 @@ struct
   and expr = Int of int
            | Real of real
            | String of string
+           | Char of char
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
@@ -58,6 +60,11 @@ struct
                              NONE   => raise InternalError
                            | SOME n => INT n
 
+  (* Scan a character from the substring ss *)
+  fun charTok ss = case Substring.getc ss of
+                         NONE => raise InternalError
+                       | SOME (c, ss1) => (CHAR c, ss1)
+
   fun scanning (toks, ss) =
     case Substring.getc ss of
          NONE => rev toks (* end of substring, ie. nothing left to scan *)
@@ -79,6 +86,10 @@ struct
                     val ss3          = Substring.dropl (fn c => c = #"\"") ss2
                     val tok          = STRING (Substring.string ssStr)
                 in scanning (tok::toks, ss3) end
+           else if c = #"#"
+           then (* char *)
+                let val (tok, ss2) = charTok ss1
+                in scanning (tok::toks, ss2) end
            else if Char.isPunct c
            then (* symbol *)
                 let val (tok, ss2) = symbTok (String.str c, ss1)
@@ -129,6 +140,9 @@ struct
   fun str (STRING s :: toks) = (String s, toks)
     | str _                  = raise SyntaxError "String expected"
 
+  fun chr (CHAR c :: toks) = (Char c, toks)
+    | chr _                = raise SyntaxError "Character expected"
+
   (** Grammar definitions *)
   (* Declarations *)
   fun decl toks =
@@ -142,6 +156,7 @@ struct
   and expr toks =
     (    num
       || str
+      || chr
       || $"(" $- expr -- repeat ($"," $- expr) -$ $")" >> (Tuple o op::)
       || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
       || $"{" $- id -$ $"=" -- expr --
