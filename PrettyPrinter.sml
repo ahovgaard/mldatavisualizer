@@ -21,7 +21,7 @@ struct
     case tree of
          Int n     => Int.toString n
        | Real n    => Real.toString n
-       | String s  => "\"" ^ s "\""
+       | String s  => "\"" ^ s ^ "\""
        | Char c    => "#\"" ^ Char.toString c ^ "\""
        | Tuple es  =>
            "(" ^ foldr op^ "" (map (fn x => showExpr x ^ ", ") es) ^ ")"
