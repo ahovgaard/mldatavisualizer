@@ -18,7 +18,6 @@
   Task                                              Est. time
 
   * ParserCombinator
-    - Support for comments (nested comments)        2.0h
     - Evaluation of expression                      2.0h
     - Correct lexing of multiple character symbol   3.0h
     - Support for weird chars and strings           1.0h
@@ -39,6 +38,8 @@
 
   Task                                              Est. time   Name
 
+  * ParserCombinator
+    - Support for comments (nested comments)        2.0h        rkh
 
 --------------------------------------------------------------------------------
 -- Finished
