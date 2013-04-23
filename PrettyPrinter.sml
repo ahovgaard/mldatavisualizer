@@ -14,7 +14,7 @@ struct
     case tree of
          Value (str, exp)       => "val " ^ str ^ " = " ^ showExpr exp ^ "\n"
        | Datatype (str, tydefs) => "datatype " ^ str ^ " = " ^ 
-           foldl op^ "" (map (fn tydef => showTydef tydef ^ " | ") tydefs)
+           foldr op^ "" (map (fn tydef => showTydef tydef ^ " | ") tydefs)
            ^ "\n"
 
   and showExpr tree =
