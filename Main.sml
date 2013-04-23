@@ -7,13 +7,27 @@ exception InvalidArguments
 
 fun parseArguments args =
   case args of
+       [a1, a2] =>
+       let
+         val dType = ParserCombinator.parse (ParserCombinator.scan a1)
+         val dVal  = ParserCombinator.parse (ParserCombinator.scan a2)
+       in
+         print "Datatype defintion:\n";
+         PrettyPrinter.show dType;
+         print "Datatype structure:\n";
+         PrettyPrinter.show dVal
+       end
+     | _        => raise InvalidArguments
+
+(*fun parseArguments args =
+  case args of
        [arg] =>
          let
            val ptrees = ParserCombinator.parse (ParserCombinator.scan arg)
          in
            PrettyPrinter.show ptrees
          end
-     | _                     => raise InvalidArguments
+     | _                     => raise InvalidArguments*)
 
 fun main () = parseArguments (CommandLine.arguments())
   handle InvalidArguments =>
