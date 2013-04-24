@@ -5,29 +5,35 @@
 
 exception InvalidArguments
 
-fun parseArguments args =
+fun cgiArgs args =
   case args of
+       (("dtype", arg) :: args1) =>
+       let val dType = ParserCombinator.parse (ParserCombinator.scan arg)
+       in print "Datatype definition:\n";
+          PrettyPrinter.show dType;
+          cgiArgs args1
+       end
+     | (("dval", arg) :: args1) =>
+       let val dVal = ParserCombinator.parse (ParserCombinator.scan arg)
+       in print "Datatype structure:\n";
+          PrettyPrinter.show dVal;
+          cgiArgs args1
+       end
+     | _                   => ()
+
+fun parseArguments args =
+  cgiArgs (CGI.getParams()) handle CGI.CGI_Error _ =>
+  (case args of
        [a1, a2] =>
-       let
-         val dType = ParserCombinator.parse (ParserCombinator.scan a1)
-         val dVal  = ParserCombinator.parse (ParserCombinator.scan a2)
+       let val dType = ParserCombinator.parse (ParserCombinator.scan a1)
+           val dVal  = ParserCombinator.parse (ParserCombinator.scan a2)
        in
          print "Datatype defintion:\n";
          PrettyPrinter.show dType;
          print "Datatype structure:\n";
          PrettyPrinter.show dVal
        end
-     | _        => raise InvalidArguments
-
-(*fun parseArguments args =
-  case args of
-       [arg] =>
-         let
-           val ptrees = ParserCombinator.parse (ParserCombinator.scan arg)
-         in
-           PrettyPrinter.show ptrees
-         end
-     | _                     => raise InvalidArguments*)
+     | _        => raise InvalidArguments)
 
 fun main () = parseArguments (CommandLine.arguments())
   handle InvalidArguments =>
@@ -35,4 +41,4 @@ fun main () = parseArguments (CommandLine.arguments())
        | ParserCombinator.SyntaxError str =>
            print ("Syntax error: " ^ str ^ "\n")
 
-val _ = main ()
+val _ = main () handle _ => print "Unknown exception thrown!"

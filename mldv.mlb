@@ -2,6 +2,8 @@
 $(SML_LIB)/basis/basis.mlb
 
 (* program files *)
+CGI.sig
+CGI.sml
 ParserCombinator.sig
 ParserCombinator.sml
 PrettyPrinter.sml
