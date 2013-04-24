@@ -13,12 +13,12 @@
     <h1>MLDataVisualizer</h1>
 
     <p>Datatype definition:</p>
-    <form method="GET" action="cgi-bin/mldv">
+    <form method="POST" action="cgi-bin/mldv">
       <textarea rows="10" cols="80" name="dtype"
         placeholder="datatype exampleTree = Node of exampleTree * int * exampleTree | Null"></textarea>
 
       <p>Data structure:</p>
-      <textarea rows="10" cols="80" name="val"
+      <textarea rows="10" cols="80" name="dval"
         placeholder="val tree = Node(Null, 42, Node(Null, 12, Null))"></textarea>
       <br /><br />
       <input type="checkbox" id="svg" name="svg" value="svg"><label for="svg">SVG (scalable image)</label>

@@ -42,3 +42,6 @@ fun main () = parseArguments (CommandLine.arguments())
            print ("Syntax error: " ^ str ^ "\n")
 
 val _ = main () handle _ => print "Unknown exception thrown!"
+
+(*val _ = app (fn (a,b) => print (a ^ "\n" ^ b ^ "\n")) (CGI.getParams())*)
+(*val _ = CGI.getParams()*)
