@@ -7,6 +7,23 @@ exception InvalidArguments
 
 fun parseArguments args =
   case args of
+       ("--cgi" :: as) =>
+       case CGI.getParams () of
+            (("dtype", p1) :: ps) => ParserCombinator.parse (ParserCombinator.scan p1)
+          | (("dval", p2) :: ps) => ParserCombinator.parse (ParserCombinator.scan p2)
+     | (a1 :: q2)      =>
+       let val dType = ParserCombinator.parse (ParserCombinator.scan a1)
+           val dVal  = ParserCombinator.parse (ParserCombinator.scan a2)
+       in
+         print "Datatype defintion:\n";
+         PrettyPrinter.show dType;
+         print "Datatype structure:\n";
+         PrettyPrinter.show dVal
+       end
+     | _        => raise InvalidArguments
+
+fun parseArguments args =
+  case args of
        [a1, a2] =>
        let
          val dType = ParserCombinator.parse (ParserCombinator.scan a1)

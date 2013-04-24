@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="Visualization of Standard ML data structures">
+    <title>MLDataVisualizer :: Visualization of Standard ML data structures</title>
+  </head>
+  <body>
+
+    <h1>MLDataVisualizer</h1>
+
+    <p>Datatype definition:</p>
+    <form method="GET" action="cgi-bin/mldv">
+      <textarea rows="10" cols="80" name="dtype"
+        placeholder="datatype exampleTree = Node of exampleTree * int * exampleTree | Null"></textarea>
+
+      <p>Data structure:</p>
+      <textarea rows="10" cols="80" name="val"
+        placeholder="val tree = Node(Null, 42, Node(Null, 12, Null))"></textarea>
+      <br /><br />
+      <input type="submit" value="Visualize!" />
+    </form>
+
+  </body>
+</html>
