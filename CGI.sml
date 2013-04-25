@@ -61,4 +61,11 @@ struct
                val qs1 = listToPairs (map uriDecode qs0)
            in qs1 end
 
+  (* Receive the value of the QUERY)_STRING field str as an option *)
+  fun getParam str =
+    (case List.find (fn (k, v) => k = str) (getParams()) of
+         NONE        => NONE
+       | SOME (_, v) => SOME v)
+    handle CGI_Error _ => NONE
+
 end

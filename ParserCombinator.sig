@@ -21,6 +21,9 @@ sig
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
+           | NullaryTyCon of string
+           | UnaryTyCon of string * expr
+           | MultaryTyCon of string * expr list
 
   and typeDef = NullaryCon of string
               | UnaryCon of string * typ
@@ -28,6 +31,7 @@ sig
 
   and typ = IntTyp
           | RealTyp
+          | StringTyp
           | Tyvar of string
 
   val scan : string -> token list
