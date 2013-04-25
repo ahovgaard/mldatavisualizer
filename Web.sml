@@ -20,31 +20,25 @@ fun cgiArgs args =
        end
      | _                        => ()
 
-val head = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">"
-         ^ "<meta name=\"description\" content=\"Visualization of Standard"
-         ^ " ML data structures\"><title>MLDataVisualizer :: Visualization "
-         ^ "of Standard ML data structures</title><style>label { margin: 1em"
-         ^ " 2em 1em 0.5em; }</style></head>"
+val htmlTop = let val is = TextIO.openIn "htmlTop.html"
+              in (TextIO.inputAll is before TextIO.closeIn is)
+                 handle e => (TextIO.closeIn is; raise e)
+              end
 
-val bodyTop =
-    "<body><h1>MLDataVisualizer</h1><p>Datatype definition:</p> <form"
-  ^ " method=\"GET\" action=\"mldv\"><textarea rows=\"10\" "
-  ^ "cols=\"80\" name=\"dtype\" placeholder=\"datatype exampleTree = "
-  ^ "Node of exampleTree * int * exampleTree | Null\">"
+val htmlMid = let val is = TextIO.openIn "htmlMid.html"
+              in (TextIO.inputAll is before TextIO.closeIn is)
+                 handle e => (TextIO.closeIn is; raise e)
+              end
 
-val bodyMid =
-  "</textarea><p>Data structure:</p><textarea rows=\"10\" cols=\"80\" "
-  ^ "name=\"dval\" placeholder=\"val tree = Node(Null, 42, Node(Null,"
-  ^ " 12, Null))\">"
+val htmlMidBot = let val is = TextIO.openIn "htmlMidBot.html"
+                 in (TextIO.inputAll is before TextIO.closeIn is)
+                    handle e => (TextIO.closeIn is; raise e)
+                 end
 
-val bodyBot =
-  "</textarea><br /><br /><input type=\"checkbox\" "
-  ^ "id=\"svg\" name=\"svg\" value=\"svg\"><label for=\"svg\">SVG "
-  ^ "(scalable image)</label><input type=\"checkbox\" id=\"latex\" "
-  ^ "name=\"latex\" value=\"latex\"><label for=\"latex\">LaTeX</label>"
-  ^ "<input type=\"submit\" value=\"Visualize!\" /></form>"
-
-val bottom = "</body></html>"
+val htmlBot = let val is = TextIO.openIn "htmlBot.html"
+              in (TextIO.inputAll is before TextIO.closeIn is)
+                 handle e => (TextIO.closeIn is; raise e)
+              end
 
 fun main () =
   let val dtyp = case CGI.getParam "dtype" of
@@ -54,11 +48,11 @@ fun main () =
                       NONE   => ""
                     | SOME s => s
   in
-    print (head ^ bodyTop ^ dtyp ^ bodyMid ^ dval ^ bodyBot);
+    print (htmlTop ^ dtyp ^ htmlMid ^ dval ^ htmlMidBot);
     (cgiArgs (CGI.getParams())
     handle ParserCombinator.SyntaxError s => print ("Syntax error: " ^ s ^ "\n")
          | CGI.CGI_Error _                => ());
-    print bottom
+    print htmlBot
   end
 
 (*fun main () =
@@ -69,4 +63,4 @@ fun main () =
        | CGI.CGI_Error _                => ());
   print bottom;*)
 
-val _ = main ()
+val _ = main () handle e => print "Unknown exception thrown!"
