@@ -5,7 +5,8 @@ struct
   exception SyntaxError of string
 
   (* Alphanumeric and symbolic keywords *)
-  val keywords = ["datatype", "withtype", "and", "of", "val", "int", "real"]
+  val keywords = ["datatype", "withtype", "and", "of", "val", "int", "real",
+                  "string"]
   val symbols  = ["=", "|", "*", "(", ")", "[", "]", "{", "}", ","]
 
   (* Datatype for lexer tokens *)
@@ -27,6 +28,9 @@ struct
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
+           | NullaryTyCon of string
+           | UnaryTyCon of string * expr
+           | MultaryTyCon of string * expr list
 
   and typeDef = NullaryCon of string
               | UnaryCon of string * typ
@@ -34,6 +38,7 @@ struct
 
   and typ = IntTyp
           | RealTyp
+          | StringTyp
           | Tyvar of string
 
   (* Check if s is a member of the list ls *)
@@ -161,6 +166,10 @@ struct
       || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
       || $"{" $- id -$ $"=" -- expr --
            repeat ($"," $- id -$ $"=" -- expr) -$ $"}" >> (Record o op::)
+      || id -$ $"(" -- expr -- repeat ($"," $- expr) -$ $")"
+           >> (fn ((s, e), es) => MultaryTyCon (s, e::es))
+      || id -- expr                                    >> UnaryTyCon
+      || id                                            >> NullaryTyCon
     ) toks
 
   (* Datatype binding *)
@@ -173,9 +182,10 @@ struct
 
   (* Type expressions *)
   and typ toks =
-    (    $"int"  >> (fn s => IntTyp) (*FIXME: improve weird looking fn*)
-      || $"real" >> (fn s => RealTyp)
-      || id      >> Tyvar
+    (    $"int"    >> (fn s => IntTyp) (*FIXME: improve weird looking fn*)
+      || $"real"   >> (fn s => RealTyp)
+      || $"string" >> (fn s => StringTyp)
+      || id        >> Tyvar
     ) toks
 
   (** Parsing function *)
