@@ -104,7 +104,7 @@ val valScan0 =
   ParserCombinator.scan "val a = UnaryNode (UnaryNode (UnaryNode (Null)))"
 val valParse0 = hd (ParserCombinator.parse valScan0)
 
-(*val dt1  = (hd o ParserCombinator.parse o ParserCombinator.scan)
-  "datatype tree = UnaryNode of tree MultaryNode of int * tree | Null"
+val dt1  = (hd o ParserCombinator.parse o ParserCombinator.scan)
+  "datatype tree = UnaryNode of tree | MultaryNode of int * tree | Null"
 val val1 = (hd o ParserCombinator.parse o ParserCombinator.scan)
-  "val a = UnaryNode (MultaryNode (5, UnaryNode (Null)))"*)
+  "val a = UnaryNode (MultaryNode (5, Null))"
