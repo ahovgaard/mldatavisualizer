@@ -102,7 +102,7 @@ struct
            else (* ignore spaces, line breaks, control characters *)
                 scanning (toks, Substring.dropl (not o Char.isGraph) ss)
 
-  fun scan str = scanning ([], Substring.full str)
+  fun scan str = scanning ([], Substring.all str)
 
   (** The parser combinators *)
   infix 6 $- -$
