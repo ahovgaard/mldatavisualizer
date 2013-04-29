@@ -26,11 +26,10 @@ fun getCons (Datatype (_, cons)) = cons
 
 fun existsCon id tyDefs =
   case tyDefs of
-       (NullaryCon id :: _)      => true
-     | (UnaryCon (id, _) :: _)   => true
-     | (MultaryCon (id, _) :: _) => true
-     | _ :: ts                   => existsCon id ts
-     | []                        => false
+       (NullaryTyCon id :: _)      => true
+     | (MultaryTyCon (id, _) :: _) => true
+     | _ :: ts                     => existsCon id ts
+     | []                          => false
 
 
 fun procVal pt dTyp =
@@ -45,36 +44,43 @@ and procExpr exp dTyp =
      | String s          => Node (s, [])
      | Char c            => Node (Char.toString c, [])
        (* Nullary type constructors defined in dTyp *)
-     | NullaryTyCon s    =>
-         if List.exists (fn e => e = NullaryCon s) (getCons dTyp)
+     | NullaryCon s    =>
+         if List.exists (fn e => e = NullaryTyCon s) (getCons dTyp)
          then Node (s, [])
          else raise ProcessingError
        (* Unary type constructors defined in dTyp *)
-     | UnaryTyCon (s, e) =>
+     | MultaryCon (s, e) =>
          (case e of
               Int n =>
-                if List.exists (fn e => e = UnaryCon (s, IntTyp)) (getCons dTyp)
+                if List.exists (fn e => e = UnaryTyCon (s, IntTyp))
+                   (getCons dTyp)
                 then Node (s ^ " " ^ Int.toString n, [])
                 else raise ProcessingError
             | Real n =>
-                if List.exists (fn e => e = UnaryCon (s, RealTyp)) (getCons dTyp)
+                if List.exists (fn e => e = UnaryTyCon (s, RealTyp))
+                   (getCons dTyp)
                 then Node (s ^ " " ^ Real.toString n, [])
                 else raise ProcessingError
             | String s1 =>
-                if List.exists (fn e => e = UnaryCon (s, StringTyp)) (getCons dTyp)
+                if List.exists (fn e => e = UnaryTyCon (s, StringTyp))
+                   (getCons dTyp)
                 then Node (s ^ " " ^ s1, [])
                 else raise ProcessingError
-             | NullaryTyCon s1 =>
+             | Tuple es =>
+
+             | NullaryCon s1 =>
                  let val id = getId dTyp
-                 in if List.exists (fn e => e = UnaryCon (s, Tyvar id)) (getCons dTyp)
-                    andalso List.exists (fn e => e = NullaryCon s1) (getCons dTyp)
+                 in if List.exists (fn e => e = UnaryTyCon (s, Tyvar id))
+                       (getCons dTyp)
+                       andalso List.exists (fn e => e = NullaryTyCon s1)
+                       (getCons dTyp)
                     (*then Node (s ^ " " ^ s1, [])*)
                     then Node (s, [Node (s1, [])])
                     else raise ProcessingError
                  end
-             | UnaryTyCon (s1, e1) =>
+             | UnaryCon (s1, e1) =>
                  let val id = getId dTyp
-                 in if List.exists (fn e => e = UnaryCon (s, Tyvar id))
+                 in if List.exists (fn e => e = UnaryTyCon (s, Tyvar id))
                       (getCons dTyp)
                       andalso existsCon s1 (getCons dTyp)
                       (*andalso List.exists (fn e => e = UnaryCon (s1, e2))
@@ -82,7 +88,7 @@ and procExpr exp dTyp =
                     then Node (s, [procExpr e1 dTyp])
                     else raise ProcessingError
                  end
-             | MultaryTyCon (s1, es) =>
+             | MultaryCon (s1, es) =>
                  let val id = getId dTyp
                  in if List.exists (fn e => e = UnaryCon (s, Tyvar id))
                        (getCons dTyp)
@@ -92,7 +98,6 @@ and procExpr exp dTyp =
                  end)
        (* Multary type constructors defined in dTyp, not even close yet... *)
      | MultaryTyCon (s, es) => Node(s, map (fn e => procExpr e dTyp) es)
-
 
          (*if List.exists (fn e => e = UnaryCon (s, t)) (getCons dTyp)
          then Node (s, [(*procTyp t*)])
