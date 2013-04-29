@@ -150,6 +150,7 @@ struct
 
   (* Misc. parsing functions *)
   val parens = fn ph => $"(" $- ph -$ $")"
+  val maybeParens = fn ph => $"(" $- ph -$ $")" || ph
 
   (** Grammar definitions *)
   (* Declarations *)
@@ -176,7 +177,8 @@ struct
 
   (* Datatype binding *)
   and datbind toks =
-    (    id -$ $"of" -- typ >> MultaryTyCon
+    (    id -$ $"of" -- maybeParens (typ -- repeat ($"*" $- typ))
+           >> (fn (str, (ty, tys)) => MultaryTyCon (str, TupleTyp (ty::tys)))
       || id                 >> NullaryTyCon
     ) toks
 
@@ -186,7 +188,6 @@ struct
       || $"int"    >> (fn _ => IntTyp)
       || $"real"   >> (fn _ => RealTyp)
       || $"string" >> (fn _ => StringTyp)
-      || $"(" $- typ -- repeat ($"," $- typ) -$ $")" >> (TupleTyp o op::)
       || id        >> Tyvar
     ) toks
 
