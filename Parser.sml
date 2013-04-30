@@ -19,7 +19,7 @@ struct
 
   (* Parse tree datatypes *)
   datatype partree = Value of string * expr
-                   | Datatype of string * typeDef list
+                   | Datatype of string * typ list
 
   and expr = Int of int
            | Real of real
@@ -31,14 +31,16 @@ struct
            | NullaryCon of string
            | MultaryCon of string * expr
 
-  and typeDef = NullaryTyCon of string
-              | MultaryTyCon of string * typ
+  (*and typeDef = NullaryTyCon of string
+              | MultaryTyCon of string * typ*)
 
   and typ = IntTyp
           | RealTyp
           | StringTyp
           | TupleTyp of typ list
           | Tyvar of string
+          | NullaryTyCon of string
+          | MultaryTyCon of string * typ
 
   (* Check if s is a member of the list ls *)
   fun member s ls = List.exists (fn n => n = s) ls

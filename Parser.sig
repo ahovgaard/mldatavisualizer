@@ -12,7 +12,7 @@ sig
                  | CHAR of char
 
   datatype partree = Value of string * expr
-                   | Datatype of string * typeDef list
+                   | Datatype of string * typ list
 
   and expr = Int of int
            | Real of real
@@ -24,14 +24,13 @@ sig
            | NullaryCon of string
            | MultaryCon of string * expr
 
-  and typeDef = NullaryTyCon of string
-              | MultaryTyCon of string * typ
-
   and typ = IntTyp
           | RealTyp
           | StringTyp
           | TupleTyp of typ list
           | Tyvar of string
+          | NullaryTyCon of string
+          | MultaryTyCon of string * typ
 
   val scan : string -> token list
 

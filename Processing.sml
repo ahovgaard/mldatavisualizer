@@ -1,7 +1,6 @@
-(* pt = partree *)
 exception ProcessingError
 
-open ParserCombinator
+open Parser
 
 (* Goal datatype *)
 datatype tree = Node of string * tree list
@@ -32,6 +31,35 @@ fun existsCon id tyDefs =
      | []                          => false
 
 
+fun partitionTuplesAux []    p1 p2 = (p1, p2)
+  | partitionTuplesAux pairs p1 p2 =
+  case pairs of
+       (Int n, IntTyp) :: ts       => partitionTuplesAux ts (Int n :: p1) p2
+     | (Real n, RealTyp) :: ts     => partitionTuplesAux ts (Real n :: p1) p2
+     | (String s, StringTyp) :: ts => partitionTuplesAux ts (String s :: p1) p2
+     (* TODO: | (Char c, CharTyp *)
+     | (NullaryCon s1, NullaryTyCon s2) :: ts
+         => if s1 = s2 then partitionTuplesAux ts p1 (NullaryCon s1 :: p2)
+            else raise ProcessingError
+     | (MultaryCon (s1, e), MultaryTyCon (s2, _)) :: ts
+         => if s1 = s2 then partitionTuplesAux ts p1 (MultaryCon (s1, e) :: p2)
+            else raise ProcessingError
+     | _ => raise ProcessingError
+
+fun partitionTuples tupVal tupTyp =
+  let val pairs = ListPair.zip (tupVal, tupTyp)
+  in partitionTuplesAux pairs [] []
+  end
+
+fun getContent exprs =
+  let fun aux e = case e of
+                       Int n    => Int.toString n
+                     | Real n   => Real.toString n
+                     | String s => s
+                     | Char c   => Char.toString c
+  in map (fn e => aux e ^ " ") exprs
+  end
+
 fun procVal pt dTyp =
   case pt of
        Value (id, expr) => procExpr expr dTyp
@@ -52,23 +80,30 @@ and procExpr exp dTyp =
      | MultaryCon (s, e) =>
          (case e of
               Int n =>
-                if List.exists (fn e => e = UnaryTyCon (s, IntTyp))
+                if List.exists (fn e => e = MultaryTyCon (s, IntTyp))
                    (getCons dTyp)
                 then Node (s ^ " " ^ Int.toString n, [])
                 else raise ProcessingError
             | Real n =>
-                if List.exists (fn e => e = UnaryTyCon (s, RealTyp))
+                if List.exists (fn e => e = MultaryTyCon (s, RealTyp))
                    (getCons dTyp)
                 then Node (s ^ " " ^ Real.toString n, [])
                 else raise ProcessingError
             | String s1 =>
-                if List.exists (fn e => e = UnaryTyCon (s, StringTyp))
+                if List.exists (fn e => e = MultaryTyCon (s, StringTyp))
                    (getCons dTyp)
                 then Node (s ^ " " ^ s1, [])
                 else raise ProcessingError
-             | Tuple es =>
+            | Tuple es =>
+                 if List.exists (fn e => e = MultaryTyCon (s, TupleTyp es1))
+                    (getCons dTyp)
+                 then let val (content, branches) = partitionTuples es es1
+                      in Node (getContent content,
+                               map (fn e => procExpr e dTyp) branches)
+                      end
+                 else raise ProcessingError)
 
-             | NullaryCon s1 =>
+             (*| NullaryCon s1 =>
                  let val id = getId dTyp
                  in if List.exists (fn e => e = UnaryTyCon (s, Tyvar id))
                        (getCons dTyp)
@@ -97,19 +132,19 @@ and procExpr exp dTyp =
                     else raise ProcessingError
                  end)
        (* Multary type constructors defined in dTyp, not even close yet... *)
-     | MultaryTyCon (s, es) => Node(s, map (fn e => procExpr e dTyp) es)
+     | MultaryTyCon (s, es) => Node(s, map (fn e => procExpr e dTyp) es)*)
 
          (*if List.exists (fn e => e = UnaryCon (s, t)) (getCons dTyp)
          then Node (s, [(*procTyp t*)])
          else raise ProcessingError*)
 
-val dtScan0  = ParserCombinator.scan "datatype tree = UnaryNode of tree | Null"
-val dtParse0 = hd (ParserCombinator.parse dtScan0)
+val dtScan0  = Parser.scan "datatype tree = UnaryNode of tree | Null"
+val dtParse0 = hd (Parser.parse dtScan0)
 val valScan0 =
-  ParserCombinator.scan "val a = UnaryNode (UnaryNode (UnaryNode (Null)))"
-val valParse0 = hd (ParserCombinator.parse valScan0)
+  Parser.scan "val a = UnaryNode (UnaryNode (UnaryNode (Null)))"
+val valParse0 = hd (Parser.parse valScan0)
 
-val dt1  = (hd o ParserCombinator.parse o ParserCombinator.scan)
+val dt1  = (hd o Parser.parse o Parser.scan)
   "datatype tree = UnaryNode of tree | MultaryNode of int * tree | Null"
-val val1 = (hd o ParserCombinator.parse o ParserCombinator.scan)
+val val1 = (hd o Parser.parse o Parser.scan)
   "val a = UnaryNode (MultaryNode (5, Null))"
