@@ -1,4 +1,4 @@
-structure ParserCombinator :> PARSER_COMBINATOR =
+structure Parser :> PARSER =
 struct
 
   exception InternalError 
@@ -19,7 +19,7 @@ struct
 
   (* Parse tree datatypes *)
   datatype partree = Value of string * expr
-                   | Datatype of string * typeDef list
+                   | Datatype of string * typ list
 
   and expr = Int of int
            | Real of real
@@ -28,21 +28,23 @@ struct
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
-           | NullaryTyCon of string
-           | UnaryTyCon of string * expr
-           | MultaryTyCon of string * expr list
+           | NullaryCon of string
+           | MultaryCon of string * expr
 
-  and typeDef = NullaryCon of string
-              | UnaryCon of string * typ
-              | MultaryCon of string * typ list
+  (*and typeDef = NullaryTyCon of string
+              | MultaryTyCon of string * typ*)
 
   and typ = IntTyp
           | RealTyp
           | StringTyp
+          | TupleTyp of typ list
           | Tyvar of string
+          | NullaryTyCon of string
+          | MultaryTyCon of string * typ
 
   (* Check if s is a member of the list ls *)
   fun member s ls = List.exists (fn n => n = s) ls
+
 
   (* Given an alphanumeical string a, construct a Key type token if a is member
      of the list keywords, else construct an Id type token. *)
@@ -102,7 +104,7 @@ struct
            else (* ignore spaces, line breaks, control characters *)
                 scanning (toks, Substring.dropl (not o Char.isGraph) ss)
 
-  fun scan str = scanning ([], Substring.full str)
+  fun scan str = scanning ([], Substring.all str)
 
   (** The parser combinators *)
   infix 6 $- -$
@@ -123,12 +125,19 @@ struct
     let val (x, toks') = ph toks
     in (f x, toks') end
 
-  fun ph1 $- ph2 = ph1 -- ph2 >> #2 (*(fn (_, y) => y)*)
+  fun ph1 $- ph2 = ph1 -- ph2 >> #2
 
-  fun ph1 -$ ph2 = ph1 -- ph2 >> #1 (*(fn (x, _) => x)*)
+  fun ph1 -$ ph2 = ph1 -- ph2 >> #1
 
   (* Parse with ph on toks zero or more times *)
   fun repeat ph toks = (ph -- repeat ph >> (op::) || empty) toks
+
+  fun repeatSep ph sep = (ph -- repeat (sep $- ph)) >> op::
+
+  (*fun repeatSepMinN ph sep 1 toks = repeatSep ph sep toks
+    | repeatSepMinN ph sep n toks = ph :: (repeatSepMinN ph sep (n-1) toks)
+    | repeatSepMinN _  _   _ _    = raise Fail "This should not happen."*)
+    
 
   (** Simple parsers *)
   fun id (ID s :: toks) = (s, toks)
@@ -148,6 +157,10 @@ struct
   fun chr (CHAR c :: toks) = (Char c, toks)
     | chr _                = raise SyntaxError "Character expected"
 
+  (* Misc. parsing functions *)
+  val parens = fn ph => $"(" $- ph -$ $")"
+  val maybeParens = fn ph => $"(" $- ph -$ $")" || ph
+
   (** Grammar definitions *)
   (* Declarations *)
   fun decl toks =
@@ -159,32 +172,33 @@ struct
 
   (* Expressions *)
   and expr toks =
-    (    num
+    (    parens expr 
+      || num
       || str
       || chr
       || $"(" $- expr -- repeat ($"," $- expr) -$ $")" >> (Tuple o op::)
       || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
       || $"{" $- id -$ $"=" -- expr --
            repeat ($"," $- id -$ $"=" -- expr) -$ $"}" >> (Record o op::)
-      || id -$ $"(" -- expr -- repeat ($"," $- expr) -$ $")"
-           >> (fn ((s, e), es) => MultaryTyCon (s, e::es))
-      || id -- expr                                    >> UnaryTyCon
-      || id                                            >> NullaryTyCon
+      || id -- expr                                    >> MultaryCon
+      || id                                            >> NullaryCon
     ) toks
 
   (* Datatype binding *)
   and datbind toks =
-    (    id -$ $"of" -- (typ -$ $"*" -- typ -- repeat ( $"*" $- typ))
-           >> (fn (str, ((t0, t1), ts)) => MultaryCon (str, t0::t1::ts))
-      || id -$ $"of" -- typ >> UnaryCon
-      || id                 >> NullaryCon
+    (    id -$ $"of" -- maybeParens (typ -$ $"*" -- typ -- repeat ($"*" $- typ))
+           >> (fn (s, ((t0, t1), ts))
+               => MultaryTyCon (s, TupleTyp (t0 :: t1 :: ts)))
+      || id -$ $"of" -- typ >> MultaryTyCon
+      || id                 >> NullaryTyCon
     ) toks
 
   (* Type expressions *)
   and typ toks =
-    (    $"int"    >> (fn s => IntTyp) (*FIXME: improve weird looking fn*)
-      || $"real"   >> (fn s => RealTyp)
-      || $"string" >> (fn s => StringTyp)
+    (    parens typ
+      || $"int"    >> (fn _ => IntTyp)
+      || $"real"   >> (fn _ => RealTyp)
+      || $"string" >> (fn _ => StringTyp)
       || id        >> Tyvar
     ) toks
 
