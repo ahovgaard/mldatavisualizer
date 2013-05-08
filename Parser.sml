@@ -132,6 +132,13 @@ struct
   (* Parse with ph on toks zero or more times *)
   fun repeat ph toks = (ph -- repeat ph >> (op::) || empty) toks
 
+  fun repeatSep ph sep = (ph -- repeat (sep $- ph)) >> op::
+
+  (*fun repeatSepMinN ph sep 1 toks = repeatSep ph sep toks
+    | repeatSepMinN ph sep n toks = ph :: (repeatSepMinN ph sep (n-1) toks)
+    | repeatSepMinN _  _   _ _    = raise Fail "This should not happen."*)
+    
+
   (** Simple parsers *)
   fun id (ID s :: toks) = (s, toks)
     | id _              = raise SyntaxError "Identifier expected"
@@ -179,8 +186,10 @@ struct
 
   (* Datatype binding *)
   and datbind toks =
-    (    id -$ $"of" -- maybeParens (typ -- repeat ($"*" $- typ))
-           >> (fn (str, (ty, tys)) => MultaryTyCon (str, TupleTyp (ty::tys)))
+    (    id -$ $"of" -- maybeParens (typ -$ $"*" -- typ -- repeat ($"*" $- typ))
+           >> (fn (s, ((t0, t1), ts))
+               => MultaryTyCon (s, TupleTyp (t0 :: t1 :: ts)))
+      || id -$ $"of" -- typ >> MultaryTyCon
       || id                 >> NullaryTyCon
     ) toks
 

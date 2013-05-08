@@ -1,3 +1,7 @@
+(* Useful syntactic sugar for function composition, as in Haskell *)
+infixr 0 $
+fun f $ x = f x
+
 exception ProcessingError
 
 open Parser
@@ -40,11 +44,11 @@ fun partitionTuplesAux []    p1 p2 = (p1, p2)
      (* TODO: | (Char c, CharTyp *)
      | (NullaryCon s1, NullaryTyCon s2) :: ts
          => if s1 = s2 then partitionTuplesAux ts p1 (NullaryCon s1 :: p2)
-            else raise ProcessingError
+            else raise Fail "partition Nullary"(*raise ProcessingError*)
      | (MultaryCon (s1, e), MultaryTyCon (s2, _)) :: ts
          => if s1 = s2 then partitionTuplesAux ts p1 (MultaryCon (s1, e) :: p2)
-            else raise ProcessingError
-     | _ => raise ProcessingError
+            else raise Fail "partition Multary"(*raise ProcessingError*)
+     | _ => raise Fail "partition wildcard" (*raise ProcessingError*)
 
 fun partitionTuples tupVal tupTyp =
   let val pairs = ListPair.zip (tupVal, tupTyp)
@@ -57,8 +61,12 @@ fun getContent exprs =
                      | Real n   => Real.toString n
                      | String s => s
                      | Char c   => Char.toString c
-  in map (fn e => aux e ^ " ") exprs
+  in foldr op^ "" (map (fn e => aux e ^ " ") exprs)
   end
+
+(*fun getMultaryCont id dTyp =
+  let val cons = getCons dTyp
+  in List.filter (fn x => x = MultaryTyCon (id, *)
 
 fun procVal pt dTyp =
   case pt of
@@ -95,13 +103,24 @@ and procExpr exp dTyp =
                 then Node (s ^ " " ^ s1, [])
                 else raise ProcessingError
             | Tuple es =>
-                 if List.exists (fn e => e = MultaryTyCon (s, TupleTyp es1))
-                    (getCons dTyp)
-                 then let val (content, branches) = partitionTuples es es1
-                      in Node (getContent content,
-                               map (fn e => procExpr e dTyp) branches)
-                      end
-                 else raise ProcessingError)
+                let fun multTupleAux cons =
+                      case cons of
+                           MultaryTyCon (s, TupleTyp e1) :: _ => e1
+                         | []       => raise ProcessingError
+                         | _  :: ls => multTupleAux ls
+                    val es1 = multTupleAux $ getCons dTyp
+                in let val (content, branches) = partitionTuples es es1
+                   in Node (getContent content,
+                           map (fn e => procExpr e dTyp) branches)
+                   end
+                (*in if List.exists (fn e => e = MultaryTyCon (s, TupleTyp es1))
+                      (getCons dTyp)
+                   then let val (content, branches) = partitionTuples es es1
+                        in Node (getContent content,
+                                map (fn e => procExpr e dTyp) branches)
+                        end
+                   else raise ProcessingError*)
+                end)
 
              (*| NullaryCon s1 =>
                  let val id = getId dTyp
@@ -138,13 +157,8 @@ and procExpr exp dTyp =
          then Node (s, [(*procTyp t*)])
          else raise ProcessingError*)
 
-val dtScan0  = Parser.scan "datatype tree = UnaryNode of tree | Null"
-val dtParse0 = hd (Parser.parse dtScan0)
-val valScan0 =
-  Parser.scan "val a = UnaryNode (UnaryNode (UnaryNode (Null)))"
-val valParse0 = hd (Parser.parse valScan0)
-
 val dt1  = (hd o Parser.parse o Parser.scan)
   "datatype tree = UnaryNode of tree | MultaryNode of int * tree | Null"
 val val1 = (hd o Parser.parse o Parser.scan)
-  "val a = UnaryNode (MultaryNode (5, Null))"
+  "val a = MultaryNode (5, Null)"
+  (*"val a = UnaryNode (MultaryNode (5, Null))"*)
