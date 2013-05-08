@@ -1,4 +1,4 @@
-signature PARSER_COMBINATOR =
+signature PARSER =
 sig
 
   exception InternalError 
@@ -12,7 +12,7 @@ sig
                  | CHAR of char
 
   datatype partree = Value of string * expr
-                   | Datatype of string * typeDef list
+                   | Datatype of string * typ list
 
   and expr = Int of int
            | Real of real
@@ -21,18 +21,16 @@ sig
            | Tuple of expr list
            | List of expr list
            | Record of (string * expr) list
-           | NullaryTyCon of string
-           | UnaryTyCon of string * expr
-           | MultaryTyCon of string * expr list
-
-  and typeDef = NullaryCon of string
-              | UnaryCon of string * typ
-              | MultaryCon of string * typ list
+           | NullaryCon of string
+           | MultaryCon of string * expr
 
   and typ = IntTyp
           | RealTyp
           | StringTyp
+          | TupleTyp of typ list
           | Tyvar of string
+          | NullaryTyCon of string
+          | MultaryTyCon of string * typ
 
   val scan : string -> token list
 
