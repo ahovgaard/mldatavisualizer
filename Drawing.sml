@@ -8,17 +8,23 @@ struct
 
   datatype posTree = Node of string * hpos * vpos * posTree list
 
+  val h = 4
+  val w = 14
+
   (* Draw a node and, if applicaple, a line to the parent node, i.e. return a
    * list of O.t type items, from the external 'draw' library, representing the
    * items to be drawn. *)
   fun drawNode (s, x, y) parentPos =
     case parentPos of
-         NONE => let val rect = O.rect (x-10, y-4) (x+10, y+4)
+         NONE => let val rect = O.rect (x - w, y - h) (x + w, y + h)
                      val text = O.text (x, y) s
                  in [rect, text] end
-       | SOME (x1, y1) => let val rect = O.rect (x-10, y-4) (x+10, y+4)
-                              val text = O.text (x, y) s
-                              val line = O.line (x, y) (x1, y1)
+       | SOME (x1, y1) => let val rect = O.rect (x - w, y - h) (x + w, y + h)
+                              val text = O.text (x, y)
+                                (if size s >= 10
+                                 then (String.substring (s, 0, 10)) ^ " .."
+                                 else s)
+                              val line = O.line (x, y - h) (x1, y1 + h)
                           in [rect, text, line] end
 
   (* Return O.t type items of given posTree, initial call has parentPos = NONE *)
@@ -48,13 +54,13 @@ open DrawingSvg
 type hpos = int
 type vpos = int
 
-datatype posTree = Node of string * hpos * vpos * posTree list
+datatype posTree = DrawingSvg.Node of string * hpos * vpos * posTree list
 
-val test = Node("a", 100, 30, [Node ("b", 60, 50,
+val test = Node("abcdefg", 100, 30, [Node ("bjhjhkjhkjhk", 60, 50,
                                  [Node ("b1", 40, 70, []),
                                   Node ("b2", 70, 70, [])]),
                                Node ("c", 100, 50,
-                                 [Node ("c1", 100, 70, [])]),
+                                 [Node ("[1,2,3,4,5,6,7,8,9]", 100, 70, [])]),
                                Node ("d", 140, 50, [])])
 
 val () = DrawingSvg.draw test "test.svg"*)
