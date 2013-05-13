@@ -151,6 +151,9 @@ fun chr (CHAR c :: toks) = (Char c, toks)
 val parens = fn ph => $"(" $- ph -$ $")"
 val maybeParens = fn ph => $"(" $- ph -$ $")" || ph
 
+(* Return constructors of given Datatype : partree *)
+fun getTyCons (Datatype (_, cons)) = cons
+  | getTyCons _                    = raise Fail "should not happen"
 
 fun parseAux toks vals dats =
 let
@@ -159,18 +162,21 @@ let
          SOME (Value (s, e)) => (e, toks)
        | NONE                => raise SyntaxError "Value binding expected"
 
-  (*fun tycon (ID str :: toks) =
+  fun nulTyCon (ID str :: toks) =
     case List.find (fn NullaryTyCon s => s = str)
-                   (map (fn Datatype (_, cons) => cons) dats) of
-         SOME (NullaryTyCon s) => (NullaryCon s, toks)
-       | NONE => raise SyntaxError "Type constructor expected"*)
+                   (List.concat (map getTyCons dats)) of
+         SOME (NullaryTyCon s) => (NullaryCon str, toks)
+       | NONE                  => raise SyntaxError "Nullary tycon expected"
 
-  (*fun tyvar (ID str :: toks) =
-    if List.exists (fn Datatype (s, _) => s = str) dats
-    then (Tyvar str, toks)
-    else raise SyntaxError "Type variable expected"*)
-    (*case List.find (fn Datatype (s, e) => s = str) dats of
-         SOME (Datatype (s, e) => *)
+  (*fun mulTyCon (s, e) =*)
+
+    (*
+     * Int 5 => IntTyp
+     * Tuple [Int 5, String "hej"] => TupleTyp [IntTyp, StringTyp]
+     *
+     * A ("node", Null)  ||  dt tree = MultaryTyCon of string * tree | Null
+     * Tuple [String "node", Null
+     *)
 
   (** Grammar definitions *) 
   (* Declarations *)
@@ -188,7 +194,8 @@ let
       || $"(" $- expr -- repeat ($"," $- expr) -$ $")" >> (Tuple o op::)
       || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
       || valbind
-      (*|| tycon*)
+      || nulTyCon
+      (*|| id -- expr                                    >> mulTyCon*)
     ) toks
 
   (* Datatype binding *)
