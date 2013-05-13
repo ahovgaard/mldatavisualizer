@@ -31,9 +31,6 @@ struct
            | NullaryCon of string
            | MultaryCon of string * expr
 
-  (*and typeDef = NullaryTyCon of string
-              | MultaryTyCon of string * typ*)
-
   and typ = IntTyp
           | RealTyp
           | StringTyp
@@ -44,7 +41,6 @@ struct
 
   (* Check if s is a member of the list ls *)
   fun member s ls = List.exists (fn n => n = s) ls
-
 
   (* Given an alphanumeical string a, construct a Key type token if a is member
      of the list keywords, else construct an Id type token. *)
@@ -72,6 +68,7 @@ struct
                          NONE => raise InternalError
                        | SOME (c, ss1) => (CHAR c, ss1)
 
+  (* Scan a substring into a list of tokens *)
   fun scanning (toks, ss) =
     case Substring.getc ss of
          NONE => rev toks (* end of substring, ie. nothing left to scan *)
@@ -104,7 +101,9 @@ struct
            else (* ignore spaces, line breaks, control characters *)
                 scanning (toks, Substring.dropl (not o Char.isGraph) ss)
 
-  fun scan str = scanning ([], Substring.all str)
+  (* Given a string, return token list. Substring.full is not defined in mosml,
+   * so use Substring.all instead, in that case. *)
+  fun scan str = scanning ([], Substring.full str)
 
   (** The parser combinators *)
   infix 6 $- -$
@@ -132,19 +131,15 @@ struct
   (* Parse with ph on toks zero or more times *)
   fun repeat ph toks = (ph -- repeat ph >> (op::) || empty) toks
 
-  fun repeatSep ph sep = (ph -- repeat (sep $- ph)) >> op::
-
-  (*fun repeatSepMinN ph sep 1 toks = repeatSep ph sep toks
-    | repeatSepMinN ph sep n toks = ph :: (repeatSepMinN ph sep (n-1) toks)
-    | repeatSepMinN _  _   _ _    = raise Fail "This should not happen."*)
-    
+  (* TODO: fun repeatSep (ph, sep) = (ph -- repeat (sep $- ph)) >> op::*)
 
   (** Simple parsers *)
   fun id (ID s :: toks) = (s, toks)
     | id _              = raise SyntaxError "Identifier expected"
 
   fun $ s1 (KEY s2 :: toks) = if s1 = s2 then (s2, toks) else
-                              raise SyntaxError ("Keyword " ^ s1 ^ " expected")
+                              raise SyntaxError ("Keyword '" ^ s1 ^
+                                                 "' expected")
     | $ _ _                 = raise SyntaxError "Keyword expected"
 
   fun num (INT n :: toks)  = (Int n, toks)
@@ -161,51 +156,115 @@ struct
   val parens = fn ph => $"(" $- ph -$ $")"
   val maybeParens = fn ph => $"(" $- ph -$ $")" || ph
 
-  (** Grammar definitions *)
-  (* Declarations *)
-  fun decl toks =
-    (    $"val" $- id -$ $"=" -- expr >> Value
-      || $"datatype" $- id -$ $"=" -- (datbind -- repeat ($"|" $- datbind))
-           >> (fn (str, (ty, tys)) => Datatype (str, ty::tys))
-           (* FIXME: ^ could be prettier, Datatype (#1, op:: #2)*)
-    ) toks
+  (* Return constructors of given Datatype : partree *)
+  fun getTyCons (Datatype (_, cons)) = cons
+    | getTyCons _                    = raise Fail "should not happen"
 
-  (* Expressions *)
-  and expr toks =
-    (    parens expr 
-      || num
-      || str
-      || chr
-      || $"(" $- expr -- repeat ($"," $- expr) -$ $")" >> (Tuple o op::)
-      || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
-      || $"{" $- id -$ $"=" -- expr --
-           repeat ($"," $- id -$ $"=" -- expr) -$ $"}" >> (Record o op::)
-      || id -- expr                                    >> MultaryCon
-      || id                                            >> NullaryCon
-    ) toks
+  (* Return constructor of a given datatype definition s1 from a list *)
+  fun getTyConsOf s1 (Datatype (s2, cons) :: ls) =
+      if s1 = s2 then cons
+      else getTyConsOf s1 ls
+    | getTyConsOf _ _ = raise Fail "datatype not defined"
 
-  (* Datatype binding *)
-  and datbind toks =
-    (    id -$ $"of" -- maybeParens (typ -$ $"*" -- typ -- repeat ($"*" $- typ))
-           >> (fn (s, ((t0, t1), ts))
-               => MultaryTyCon (s, TupleTyp (t0 :: t1 :: ts)))
-      || id -$ $"of" -- typ >> MultaryTyCon
-      || id                 >> NullaryTyCon
-    ) toks
+  (* Auxiliary function for main function 'parse'. Used to make lists 'vals' and
+     'dats' available to functions: valbind, nulTyCon, mulTyCon etc. *)
+  fun parseAux toks vals dats =
+  let
+    (* Parse an identifier as a value binding if defined in earlier parsing *)
+    fun valbind (ID str :: toks) =
+      (case List.find (fn Value (s, _) => s = str | _ => false) vals of
+            SOME (Value (s, e)) => (e, toks)
+          | NONE                => raise SyntaxError "Value binding expected"
+          | _                   => raise Fail "should not happen")
+      | valbind _ = raise SyntaxError "Value binding expected"
 
-  (* Type expressions *)
-  and typ toks =
-    (    parens typ
-      || $"int"    >> (fn _ => IntTyp)
-      || $"real"   >> (fn _ => RealTyp)
-      || $"string" >> (fn _ => StringTyp)
-      || id        >> Tyvar
-    ) toks
+    (* Parse a nullary type constructor if defined in parsed datatype decl. *)
+    fun nulTyCon (ID str :: toks) =
+      (case List.find (fn NullaryTyCon s => s = str | _ => false)
+                      (List.concat (map getTyCons dats)) of
+            SOME (NullaryTyCon s) => (NullaryCon str, toks)
+          | NONE                  => raise SyntaxError "Nullary tycon expected"
+          | _                     => raise Fail "should not happen")
+      | nulTyCon _ = raise SyntaxError "Nullary tycon expected"
 
-  (** Parsing function *)
-  fun parse toks =
+    (* Check if expr e1 and typ e2 match *)
+    fun expMatch (e1, e2) =
+      case (e1, e2) of
+           (Int _, IntTyp) => true
+         | (String _, StringTyp) => true
+         | (Tuple es1, TupleTyp es2) =>
+             true andalso List.all (fn b => b)
+                                   (map expMatch (ListPair.zip (es1, es2)))
+         | (MultaryCon (s1, e), Tyvar s2) =>
+             List.exists (fn x => expMatch (MultaryCon (s1, e), x))
+                         (getTyConsOf s2 dats)
+         | (NullaryCon s1, Tyvar s2) =>
+             List.exists (fn x => expMatch (NullaryCon s1, x))
+                         (getTyConsOf s2 dats)
+         | (NullaryCon s1, NullaryTyCon s2) => s1 = s2
+         | (MultaryCon (s1, e3), MultaryTyCon (s2, e4)) =>
+             s1 = s2 andalso expMatch (e3, e4)
+         | _ => false
+
+    (* Parse a multary type constructor if defined in parsed datatype decl. *)
+    fun mulTyCon (str, e) =
+      case List.find (fn MultaryTyCon (s, _) => s = str | _ => false)
+                     (List.concat (map getTyCons dats)) of
+           SOME (MultaryTyCon (s, exp)) =>
+             if expMatch (e, exp)
+             then MultaryCon (str, e)
+             else raise SyntaxError "Multary tycon expected"
+         | NONE => raise SyntaxError "Multary tycon expected"
+         | _    => raise Fail "should not happen"
+
+    (** Grammar definitions *) 
+    (* Declarations *)
+    fun decl toks =
+      (    $"val" $- id -$ $"=" -- expr >> Value
+        || $"datatype" $- id -$ $"=" -- (datbind -- repeat ($"|" $- datbind))
+             >> (fn (str, (ty, tys)) => Datatype (str, ty :: tys))
+      ) toks
+
+    (* Expressions *)
+    and expr toks =
+      (    parens expr
+        || num
+        || str
+        || chr
+        || $"(" $- expr -- repeat ($"," $- expr) -$ $")" >> (Tuple o op::)
+        || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
+        || $"{" $- id -$ $"=" -- expr --
+             repeat ($"," $- id -$ $"=" -- expr) -$ $"}" >> (Record o op::)
+        || valbind
+        || nulTyCon
+        || id -- expr                                    >> mulTyCon
+      ) toks
+
+    (* Datatype binding *)
+    and datbind toks =
+      (    id -$ $"of" -- maybeParens (typ -$ $"*" -- typ --
+             repeat ($"*" $- typ)) >> (fn (s, ((t0, t1), ts)) =>
+                                        MultaryTyCon (s, TupleTyp (t0::t1::ts)))
+        || id -$ $"of" -- typ >> MultaryTyCon
+        || id                 >> NullaryTyCon
+      ) toks
+
+    (* Type expressions *)
+    and typ toks =
+      (    parens typ
+        || $"int"    >> (fn _ => IntTyp)
+        || $"real"   >> (fn _ => RealTyp)
+        || $"string" >> (fn _ => StringTyp)
+        || id        >> Tyvar
+      ) toks
+  in
     case decl toks of
-         (tree, []) => [tree]
-       | (tree, ls) => tree :: parse ls
+         (tree, [])       => [tree]
+       | (Value e, ls)    => Value e :: parseAux ls (Value e :: vals) dats
+       | (Datatype e, ls) => Datatype e :: parseAux ls vals (Datatype e :: dats)
+  end
+
+  (* Parsing interface function of the 'Parser' module *)
+  fun parse toks = parseAux toks [] []
 
 end
