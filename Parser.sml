@@ -155,28 +155,55 @@ val maybeParens = fn ph => $"(" $- ph -$ $")" || ph
 fun getTyCons (Datatype (_, cons)) = cons
   | getTyCons _                    = raise Fail "should not happen"
 
+(* Return constructor of a given datatype definition s1 *)
+fun getTyConsOf s1 (Datatype (s2, cons) :: ls) =
+    if s1 = s2 then cons
+    else getTyConsOf s1 ls
+  | getTyConsOf _ _ = raise Fail "datatype not defined"
+
 fun parseAux toks vals dats =
 let
   fun valbind (ID str :: toks) =
-    case List.find (fn Value (s, e) => s = str) vals of
-         SOME (Value (s, e)) => (e, toks)
-       | NONE                => raise SyntaxError "Value binding expected"
+    (case List.find (fn Value (s, _) => s = str | _ => false) vals of
+          SOME (Value (s, e)) => (e, toks)
+        | NONE                => raise SyntaxError "Value binding expected"
+        | _                   => raise Fail "should not happen")
+    | valbind _ = raise SyntaxError "Value binding expected"
 
   fun nulTyCon (ID str :: toks) =
-    case List.find (fn NullaryTyCon s => s = str)
+    (case List.find (fn NullaryTyCon s => s = str | _ => false)
+                    (List.concat (map getTyCons dats)) of
+          SOME (NullaryTyCon s) => (NullaryCon str, toks)
+        | NONE                  => raise SyntaxError "Nullary tycon expected"
+        | _                     => raise Fail "should not happen")
+    | nulTyCon _ = raise SyntaxError "Nullary tycon expected"
+
+  fun expMatch (e1, e2) =
+    case (e1, e2) of
+         (Int _, IntTyp) => true
+       | (String _, StringTyp) => true
+       | (Tuple es1, TupleTyp es2) => true andalso List.all (fn b => b)
+                                        (map expMatch (ListPair.zip (es1, es2)))
+       | (MultaryCon (s1, e), Tyvar s2) =>
+           List.exists (fn x => expMatch (MultaryCon (s1, e), x))
+                       (getTyConsOf s2 dats)
+       | (NullaryCon s1, Tyvar s2) =>
+           List.exists (fn x => expMatch (NullaryCon s1, x))
+                       (getTyConsOf s2 dats)
+       | (NullaryCon s1, NullaryTyCon s2) => s1 = s2
+       | (MultaryCon (s1, e3), MultaryTyCon (s2, e4)) =>
+           s1 = s2 andalso expMatch (e3, e4)
+       | _ => false
+
+  fun mulTyCon (str, e) =
+    case List.find (fn MultaryTyCon (s, _) => s = str | _ => false)
                    (List.concat (map getTyCons dats)) of
-         SOME (NullaryTyCon s) => (NullaryCon str, toks)
-       | NONE                  => raise SyntaxError "Nullary tycon expected"
-
-  (*fun mulTyCon (s, e) =*)
-
-    (*
-     * Int 5 => IntTyp
-     * Tuple [Int 5, String "hej"] => TupleTyp [IntTyp, StringTyp]
-     *
-     * A ("node", Null)  ||  dt tree = MultaryTyCon of string * tree | Null
-     * Tuple [String "node", Null
-     *)
+         SOME (MultaryTyCon (s, exp)) =>
+           if expMatch (e, exp)
+           then MultaryCon (str, e)
+           else raise SyntaxError "Multary tycon expected"
+       | NONE => raise SyntaxError "Multary tycon expected"
+       | _    => raise Fail "should not happen"
 
   (** Grammar definitions *) 
   (* Declarations *)
@@ -195,7 +222,7 @@ let
       || $"[" $- expr -- repeat ($"," $- expr) -$ $"]" >> (List o op::)
       || valbind
       || nulTyCon
-      (*|| id -- expr                                    >> mulTyCon*)
+      || id -- expr                                    >> mulTyCon
     ) toks
 
   (* Datatype binding *)
