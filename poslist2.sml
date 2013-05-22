@@ -1,13 +1,13 @@
 type hpos = int
 type vpos = int
 
-datatype 'a Tree = Node of string * 'a * ('a Tree list)
+datatype 'a Tree = Node of 'a * ('a Tree list)
 (*datatype posTree = Node of vpos * posTree list*)
 
 type Extent = (hpos*vpos) list
 
-fun movetree (Node(str, (y, x), subtrees), x' : int) =
-       Node(str, (y, x+x'), subtrees)
+fun movetree (Node((label, x), subtrees), x' : int) =
+       Node((label, x+x'), subtrees)
 
 fun moveextent (e : Extent, x) =  map (fn (p, q) => (p+x, q+x)) e
 
@@ -54,7 +54,7 @@ fun fitlist es = map mean (ListPair.zip (fitlistl es, fitlistr es))
 
 fun design tree =
 let
-  fun design' (Node(s, i, subtrees)) =
+  fun design' (Node(i, subtrees)) =
   let
     val (trees, extents)
         = ListPair.unzip (map design' subtrees)
@@ -67,7 +67,7 @@ let
     val resultextent
         = (0, 0) :: mergelist pextents
     val resulttree
-        = Node(s, (i, 0), ptrees)
+        = Node((i, 0), ptrees)
   in
     (resulttree, resultextent)
   end
@@ -75,3 +75,8 @@ in
   #1 (design' tree)
 end
 
+fun position tree =
+  let fun positionAux (Node ((s, x), ts), i) =
+        Node ((s, x, i), map (fn t => positionAux (t, i+5)) ts)
+  in positionAux (tree, 0)
+  end
