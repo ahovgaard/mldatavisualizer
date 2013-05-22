@@ -1,0 +1,15 @@
+(* import libraries *)
+$(SML_LIB)/basis/basis.mlb
+
+(* program files *)
+CGI.sig
+CGI.sml
+Parser.sig
+Parser.sml
+Processing.sig
+Processing.sml
+draw/draw.sig
+draw/draw.sml
+Drawing.sig
+Drawing.sml
+Web.sml
