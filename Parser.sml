@@ -264,7 +264,7 @@ struct
        | (Datatype e, ls) => Datatype e :: parseAux ls vals (Datatype e :: dats)
   end
 
-  (* Parsing interface function of the 'Parser' module *)
+  (* Parsing interface function of the 'Parser' module, returns a partree list *)
   fun parse toks = parseAux toks [] []
 
 end

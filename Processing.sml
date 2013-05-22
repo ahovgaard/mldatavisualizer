@@ -1,49 +1,47 @@
-(* Useful syntactic sugar for function composition, as in Haskell *)
-infixr 0 $
-fun f $ x = f x
+structure Processing :> PROCESSING =
+struct
 
-open Parser
+  exception ProcessingError of string
 
-exception ProcessingError of string
+  datatype tree = Node of string * tree list
 
-(* Goal datatype *)
-datatype tree = Node of string * tree list
+  fun procVal dVal =
+    case dVal of
+         Parser.Value (id, expr) => procExpr expr
+       | _ => raise ProcessingError "Invalid value declaration"
 
+  and procExpr expr =
+    case expr of
+         Parser.Int n             => Node (Int.toString n, [])
+       | Parser.Real n            => Node (Real.toString n, [])
+       | Parser.String n          => Node (n, [])
+       | Parser.Char c            => Node (Char.toString c, [])
+       | Parser.Tuple ls          => Node (procTuple ls)
+       | Parser.NullaryCon s      => Node (s, [])
+       | Parser.MultaryCon (s, e) => procExpr e
+       | _                        => raise ProcessingError "error" (*TODO*)
 
-fun procVal dVal =
-  case dVal of
-       Value (id, expr) => procExpr expr
-     | _                => raise ProcessingError "Invalid value declaration"
+  and procTuple exprs =
+    let fun aux exprs (strs, exps) =
+          case exprs of
+               Parser.Int n    :: ls => aux ls (Int.toString n :: strs, exps)
+             | Parser.Real n   :: ls => aux ls (Real.toString n :: strs, exps)
+             | Parser.String s :: ls => aux ls (s :: strs, exps)
+             | Parser.Char c   :: ls =>
+                 aux ls ("#\"" ^ Char.toString c ^ "\"" :: strs, exps)
+             | e :: ls => aux ls (strs, procExpr e :: exps)
+             | [] => (String.concatWith ", " (rev strs), rev exps)
+             (*| NullaryCon s :: ls      => aux ls (str, Node (s, []) :: exps)
+             | MultaryCon (s, e) :: ls => aux ls (str, procExpr MultaryCon (s, e) :: exps)*)
+    in
+      aux exprs ([], [])
+    end
 
-and procExpr expr =
-  case expr of
-       Int n             => Node (Int.toString n, [])
-     | Real n            => Node (Real.toString n, [])
-     | String n          => Node (n, [])
-     | Char c            => Node (Char.toString c, [])
-     | Tuple ls          => Node $ procTuple ls
-     | NullaryCon s      => Node (s, [])
-     | MultaryCon (s, e) => procExpr e
-     | _                 => raise ProcessingError "error" (*TODO*)
+  (* Testing: *)
+  (*val test = (List.last o parse o scan)
+    "datatype tree = Node of string * int * tree * tree | Null \
+    \val a = Node(\"a\", 1, Node(\"b\", 2, Null, Null), Node(\"c\", 3, Null, Null))"
 
-and procTuple exprs =
-  let fun aux exprs (strs, exps) =
-        case exprs of
-             Int n    :: ls => aux ls (Int.toString n :: strs, exps)
-           | Real n   :: ls => aux ls (Real.toString n :: strs, exps)
-           | String s :: ls => aux ls (s :: strs, exps)
-           | Char c   :: ls => aux ls ("#\"" ^ Char.toString c ^ "\"" :: strs, exps)
-           | e        :: ls => aux ls (strs, procExpr e :: exps)
-           | []             => (String.concatWith ", " $ rev strs, rev exps)
-           (*| NullaryCon s :: ls      => aux ls (str, Node (s, []) :: exps)
-           | MultaryCon (s, e) :: ls => aux ls (str, procExpr MultaryCon (s, e) :: exps)*)
-  in
-    aux exprs ([], [])
-  end
+  val res = procVal test*)
 
-(* Testing: *)
-val test = List.last $ parse $ scan
-  "datatype tree = Node of string * int * tree * tree | Null \
-  \val a = Node(\"a\", 1, Node(\"b\", 2, Null, Null), Node(\"c\", 3, Null, Null))"
-
-val res = procVal test
+end

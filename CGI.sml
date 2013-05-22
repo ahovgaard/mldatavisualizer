@@ -2,25 +2,24 @@ structure CGI :> CGI =
 struct
 
   exception CGI_Error of string
-
-  fun uriDecode' (#"%"::c1::c2::t) =
-  let
-      fun frmhex c =
-          if #"0" <= c andalso c <= #"9" then
-              Char.ord c - Char.ord #"0" else
-          if #"a" <= c andalso c <= #"f" then
-              Char.ord c - Char.ord #"a" + 10 else
-          if #"A" <= c andalso c <= #"F" then
-              Char.ord c - Char.ord #"A" + 10
-          else Char.ord #"?"
+  
+  local
+    fun fromHex c =
+      if #"0" <= c andalso c <= #"9"
+      then Char.ord c - Char.ord #"0"
+      else if #"a" <= c andalso c <= #"f"
+      then Char.ord c - Char.ord #"a" + 10
+      else if #"A" <= c andalso c <= #"F"
+      then Char.ord c - Char.ord #"A" + 10
+      else Char.ord #"?"
+    fun uriDecodeAux (#"%" :: c1 :: c2 :: t) =
+        Char.chr ((fromHex c1) * 16 + fromHex c2) :: uriDecodeAux t
+      | uriDecodeAux (#"+" :: t) = #" " :: uriDecodeAux t
+      | uriDecodeAux (h :: t) = h :: uriDecodeAux t
+      | uriDecodeAux [] = []
   in
-      Char.chr ((frmhex c1) * 16 + frmhex c2) :: uriDecode' t
+    val uriDecode = String.implode o uriDecodeAux o String.explode
   end
-    | uriDecode' (#"+"::t) = #" " :: uriDecode' t
-    | uriDecode' (h::t) = h :: uriDecode' t
-    | uriDecode' [] = []
-      
-  fun uriDecode s = String.implode (uriDecode' (String.explode s))
 
   (*local
     (* Convert hex char to int *)
@@ -61,7 +60,7 @@ struct
                val qs1 = listToPairs (map uriDecode qs0)
            in qs1 end
 
-  (* Receive the value of the QUERY)_STRING field str as an option *)
+  (* Receive the value of the QUERY_STRING field str as an option *)
   fun getParam str =
     (case List.find (fn (k, v) => k = str) (getParams()) of
          NONE        => NONE

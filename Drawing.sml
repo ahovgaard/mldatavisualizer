@@ -33,13 +33,22 @@ struct
     @
     List.concat (map (fn e => drawTree e (SOME (x, y))) ls)
 
-  (* Main interface function. Draw a given postree and output to file. *)
-  fun draw posTree file =
+  (* Draw a given postree and output to file. *)
+  fun drawFile posTree file =
     let
       val pict = O.all (drawTree posTree NONE)
       val p = picture {unitlength = MM 1.0, dim = (100, 100)} pict
     in
       toFile A4 file p
+    end
+
+  (* Main interface function. Draw a given postree and ouput as a string. *)
+  fun draw posTree =
+    let
+      val pict = O.all (drawTree posTree NONE)
+      val p = picture {unitlength = MM 1.0, dim = (100, 100)} pict
+    in
+      toString A4 p
     end
 
 end
