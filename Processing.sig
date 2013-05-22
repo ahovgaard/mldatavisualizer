@@ -1,8 +1,8 @@
 signature PROCESSING =
 sig
 
-  datatype tree = Node of string * tree list
+  datatype 'a Tree = Node of 'a * ('a Tree list)
 
-  val procVal : Parser.partree -> tree
+  val proc: Parser.partree -> (string * int * int) Tree
 
 end
