@@ -2,23 +2,7 @@
  * MLDataVisualizer CGI web interface
  *)
 
-exception InvalidArguments
-
-fun cgiArgs args =
-  case args of
-       (("dtype", arg) :: args1) =>
-       let val dType = ParserCombinator.parse (ParserCombinator.scan arg)
-       in print "Datatype definition:\n";
-          PrettyPrinter.show dType;
-          cgiArgs args1
-       end
-     | (("dval", arg) :: args1) =>
-       let val dVal = ParserCombinator.parse (ParserCombinator.scan arg)
-       in print "Datatype structure:\n";
-          PrettyPrinter.show dVal;
-          cgiArgs args1
-       end
-     | _                        => ()
+(*exception InvalidArguments*)
 
 val htmlTop = let val is = TextIO.openIn "htmlTop.html"
               in (TextIO.inputAll is before TextIO.closeIn is)
@@ -30,37 +14,24 @@ val htmlMid = let val is = TextIO.openIn "htmlMid.html"
                  handle e => (TextIO.closeIn is; raise e)
               end
 
-val htmlMidBot = let val is = TextIO.openIn "htmlMidBot.html"
-                 in (TextIO.inputAll is before TextIO.closeIn is)
-                    handle e => (TextIO.closeIn is; raise e)
-                 end
-
 val htmlBot = let val is = TextIO.openIn "htmlBot.html"
               in (TextIO.inputAll is before TextIO.closeIn is)
                  handle e => (TextIO.closeIn is; raise e)
               end
 
-fun main () =
-  let val dtyp = case CGI.getParam "dtype" of
-                      NONE   => ""
-                    | SOME s => s
-      val dval = case CGI.getParam "dval" of
-                      NONE   => ""
-                    | SOME s => s
-  in
-    print (htmlTop ^ dtyp ^ htmlMid ^ dval ^ htmlMidBot);
-    (cgiArgs (CGI.getParams())
-    handle ParserCombinator.SyntaxError s => print ("Syntax error: " ^ s ^ "\n")
-         | CGI.CGI_Error _                => ());
-    print htmlBot
-  end
+val svgInline0 = "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"
+val svgInline1 = "</svg>"
 
-(*fun main () =
-  print head;
-  print body;
-  (cgiArgs (CGI.getParams())
-  handle ParserCombinator.SyntaxError s => print ("Syntax error: " ^ s ^ "\n")
-       | CGI.CGI_Error _                => ());
-  print bottom;*)
+fun main () = 
+  case CGI.getParam "input" of
+       SOME s => let val res = (DrawingSvg.draw o Processing.procVal o
+                                List.last o Parser.parse o Parse.scan) s
+                 in print (htmlTop ^ s ^ htmlMid ^ svgInline0 ^ res ^
+                          svgInline1 ^ htmlBot)
+                 end
+     | NONE   => print (htmlTop ^ htmlMid ^ htmlBot)
 
-val _ = main () handle e => print "Unknown exception thrown!"
+val _ = main ()
+  handle Empty => print "Exception 'Empty' thrown"
+       | e     => print "Unknown exception thrown!"
+

@@ -457,6 +457,13 @@ structure LatexPicture :> PICTURE = struct
       in (TextIO.output(os, text) handle ? => (TextIO.closeOut os; raise ?))
        ; TextIO.closeOut os
       end
+
+  fun toString size lines =
+    let val lines = header size @ lines @ footer
+        val text  = export lines
+    in text
+    end
+
 end
 
 
@@ -579,6 +586,11 @@ structure SvgPicture :> PICTURE = struct
       in (TextIO.output(os, text) handle ? => (TextIO.closeOut os; raise ?))
        ; TextIO.closeOut os
       end
-end
 
+  fun toString size lines =
+    let val text  = export lines
+    in text
+    end
+
+end
 

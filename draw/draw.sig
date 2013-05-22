@@ -115,4 +115,5 @@ signature PICTURE = sig
 
   datatype size = A4 | A3
   val toFile : size -> string -> t -> unit
+  val toString : size -> t -> string
 end
