@@ -19,15 +19,14 @@ val htmlBot = let val is = TextIO.openIn "htmlBot.html"
                  handle e => (TextIO.closeIn is; raise e)
               end
 
-val svgInline0 = "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"
-val svgInline1 = "</svg>"
+(*val svgInline0 = "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"
+val svgInline1 = "</svg>"*)
 
 fun main () = 
   case CGI.getParam "input" of
-       SOME s => let val res = (DrawingSvg.draw o Processing.procVal o
-                                List.last o Parser.parse o Parse.scan) s
-                 in print (htmlTop ^ s ^ htmlMid ^ svgInline0 ^ res ^
-                          svgInline1 ^ htmlBot)
+       SOME s => let val res = (DrawingSvg.draw o Processing.proc o List.last o
+                                Parser.parse o Parser.scan) s
+                 in print (htmlTop ^ s ^ htmlMid ^ res ^ htmlBot)
                  end
      | NONE   => print (htmlTop ^ htmlMid ^ htmlBot)
 

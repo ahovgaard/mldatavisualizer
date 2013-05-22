@@ -3,10 +3,7 @@ struct
 
   open P
 
-  type hpos = int
-  type vpos = int
-
-  datatype posTree = Node of string * hpos * vpos * posTree list
+  open Processing
 
   val h = 4
   val w = 14
@@ -28,7 +25,7 @@ struct
                           in [rect, text, line] end
 
   (* Return O.t type items of given posTree, initial call has parentPos = NONE *)
-  fun drawTree (Node (s, x, y, ls)) parentPos =
+  fun drawTree (Node ((s, x, y), ls)) parentPos =
     drawNode (s, x, y) parentPos
     @
     List.concat (map (fn e => drawTree e (SOME (x, y))) ls)
