@@ -33,4 +33,3 @@ fun main () =
 val _ = main ()
   handle Empty => print "Exception 'Empty' thrown"
        | e     => print "Unknown exception thrown!"
-
