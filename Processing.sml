@@ -112,7 +112,7 @@ struct
 
   fun position tree =
     let fun positionAux (Node ((s, x), ts), i) =
-          Node ((s, x, i), map (fn t => positionAux (t, i+30)) ts)
+          Node ((s, x+Int.abs(x), i), map (fn t => positionAux (t, i+30)) ts)
     in positionAux (design tree, 0)
     end
 
