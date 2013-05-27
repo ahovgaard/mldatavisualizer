@@ -20,11 +20,11 @@ val htmlBot = let val is = TextIO.openIn "htmlBot.html"
 fun main () =
   let val cgiParams = CGI.getParams ()
       val (inputSet, input) =
-        case List.find (fn (x,_) => x = "input") cgiParams of
+        case List.find (fn (x, _) => x = "input") cgiParams of
              SOME (_, y) => (true, y)
            | NONE        => (false, "")
-      val svgSel   = List.exists (fn (x,y) => x = "cgi") cgiParams
-      val latexSel = List.exists (fn (x, y) => x = "latex") cgiParams
+      val svgSel   = List.exists (fn (x, _) => x = "svg") cgiParams
+      val latexSel = List.exists (fn (x, _) => x = "latex") cgiParams
   in
     if inputSet
     then let val procRes = (Processing.proc o List.last o Parser.parse o
