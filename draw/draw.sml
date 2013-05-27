@@ -470,7 +470,7 @@ end
 structure SvgPicture :> PICTURE = struct
   structure O = Object
   structure W = Widget
-  fun qq s = "'" ^ s ^ "'"
+  fun qq s = "\"" ^ s ^ "\""
   fun pr_color (O.C.RGB(r,g,b)) =
       let fun zero_prefix s = 
               if size s = 1 then "0" ^ s
