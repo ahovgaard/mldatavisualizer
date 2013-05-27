@@ -19,8 +19,6 @@ val htmlBot = let val is = TextIO.openIn "htmlBot.html"
 
 fun main () =
   let val cgiParams = CGI.getParams ()
-      (*val (inputSet, input) = if List.exists (fn (x,y) => x = "input") cgiParams
-                              then (true, y) else (false, "")*)
       val (inputSet, input) =
         case List.find (fn (x,_) => x = "input") cgiParams of
              SOME (_, y) => (true, y)
@@ -32,21 +30,14 @@ fun main () =
     then let val procRes = (Processing.proc o List.last o Parser.parse o
                             Parser.scan) input
          in print (htmlTop ^ input ^ htmlMid);
-            (if svgSel andalso latexSel then print (DrawingSvg.draw procRes)
-            else if latexSel then print (DrawingLatex.draw procRes)
-            else print (DrawingSvg.draw procRes));
+            (if svgSel andalso latexSel
+             then print (DrawingSvg.draw procRes ^ DrawingLatex.draw procRes)
+             else if latexSel then print (DrawingLatex.draw procRes)
+             else print (DrawingSvg.draw procRes));
             print htmlBot
          end
     else print (htmlTop ^ htmlMid ^ htmlBot)
   end
-
-(*fun main () = 
-  case CGI.getParam "input" of
-       SOME s => let val res = (DrawingSvg.draw o Processing.proc o List.last o
-                                Parser.parse o Parser.scan) s
-                 in print (htmlTop ^ s ^ htmlMid ^ res ^ htmlBot)
-                 end
-     | NONE   => print (htmlTop ^ htmlMid ^ htmlBot)*)
 
 val _ = main ()
   handle CGI.Error s => print ("Error recieving input, error message is: " ^ s)
