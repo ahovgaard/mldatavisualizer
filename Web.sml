@@ -17,6 +17,9 @@ val htmlBot = let val is = TextIO.openIn "htmlBot.html"
                  handle e => (TextIO.closeIn is; raise e)
               end
 
+val latexBox0 = "<textarea cols=\"40\" rows=\"10\">"
+val latexBox1 = "</textarea>"
+
 fun main () =
   let val cgiParams = CGI.getParams ()
       val (inputSet, input) =
@@ -31,8 +34,10 @@ fun main () =
                             Parser.scan) input
          in print (htmlTop ^ input ^ htmlMid);
             (if svgSel andalso latexSel
-             then print (DrawingSvg.draw procRes ^ DrawingLatex.draw procRes)
-             else if latexSel then print (DrawingLatex.draw procRes)
+             then print (latexBox0 ^ DrawingLatex.draw procRes ^ latexBox1 ^
+                         DrawingSvg.draw procRes)
+             else if latexSel
+             then print (latexBox0 ^ DrawingLatex.draw procRes ^ latexBox1)
              else print (DrawingSvg.draw procRes));
             print htmlBot
          end
