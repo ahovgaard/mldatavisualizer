@@ -30,17 +30,17 @@ struct
 
   (* Convert [a, b, c, d] to [(a, b), (c, d)] *)
   fun listToPairs (l1 :: l2 :: ls) = ((l1, l2) :: listToPairs ls)
-    | listToPairs (l  :: ls)       = raise Error "Malformed CGI call"
     | listToPairs []               = []
+    | listToPairs (l  :: [])       = raise Error "Malformed CGI call"
 
   (* Receive the value of the QUERY_STRING environment variable and return the
-   * value of this as a list of (id * value) pairs. *)
+     value of this as a list of (id * value) pairs. *)
   fun getParams () =
     case OS.Process.getEnv "QUERY_STRING" of
-         SOME s =>
+         NONE   => [] 
+       | SOME s =>
            let val qs0 = String.fields (fn c => c = #"&" orelse c = #"=") s
                val qs1 = listToPairs (map uriDecode qs0)
            in qs1 end
-       | NONE   => [] 
 
 end

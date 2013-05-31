@@ -50,23 +50,6 @@ struct
 
 end
 
-structure DrawingSvg :> DRAWING = Drawing (structure P = SvgPicture)
-
+structure DrawingSvg   :> DRAWING = Drawing (structure P = SvgPicture)
 structure DrawingLatex :> DRAWING = Drawing (structure P = LatexPicture)
 
-(* Testing:
-open DrawingSvg
-
-type hpos = int
-type vpos = int
-
-datatype posTree = DrawingSvg.Node of string * hpos * vpos * posTree list
-
-val test = Node("abcdefg", 100, 30, [Node ("bjhjhkjhkjhk", 60, 50,
-                                 [Node ("b1", 40, 70, []),
-                                  Node ("b2", 70, 70, [])]),
-                               Node ("c", 100, 50,
-                                 [Node ("[1,2,3,4,5,6,7,8,9]", 100, 70, [])]),
-                               Node ("d", 140, 50, [])])
-
-val () = DrawingSvg.draw test "test.svg"*)

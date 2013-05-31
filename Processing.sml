@@ -3,9 +3,7 @@ struct
 
   exception ProcessingError of string
 
-  (*datatype tree = Node of string * tree list*)
-
-  datatype 'a Tree = Node of 'a * ('a Tree list)
+  datatype 'a tree = Node of 'a * ('a tree list)
 
   type Extent = (int * int) list
 
