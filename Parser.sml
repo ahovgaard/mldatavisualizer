@@ -103,7 +103,7 @@ struct
 
   (* Given a string, return token list. Substring.full is not defined in mosml,
    * so use Substring.all instead, in that case. *)
-  fun scan str = scanning ([], Substring.full str)
+  fun scan str = scanning ([], Substring.all str)
 
   (** The parser combinators *)
   infix 6 $- -$

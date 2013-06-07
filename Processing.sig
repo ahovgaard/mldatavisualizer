@@ -8,4 +8,6 @@ sig
      content, an int horizontal position and an int vertical position. *)
   val proc: Parser.partree -> (string * int * int) tree
 
+  (*val design : 'a tree -> ('a * int) tree*)
+
 end
