@@ -48,7 +48,7 @@ struct
     | merge (ps, []) = ps
     | merge ((p, _) :: ps, (_, q) :: qs) = (p, q) :: merge (ps, qs)
 
-  fun mergelist es = List.foldl merge es []
+  fun mergelist es = List.foldl merge [] es
 
   fun fit ((_, p) :: ps) ((q, _) :: qs) = Int.max(fit ps qs, p - q + 10)
     | fit _              _              = 0
@@ -96,7 +96,7 @@ struct
       val ptrees
           = map movetree (ListPair.zip (trees, positions))
       val pextents
-          = List.concat(map moveextent (ListPair.zip (extents, positions)))
+          = map moveextent (ListPair.zip (extents, positions))
       val resultextent
           = (0, 0) :: mergelist pextents
       val resulttree
