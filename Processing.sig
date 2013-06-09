@@ -1,6 +1,8 @@
 signature PROCESSING =
 sig
 
+  exception Error of string
+
   datatype 'a tree = Node of 'a * ('a tree list)
 
   (* Process a Parser.partree, as returned by Parser.parse, into a positioned

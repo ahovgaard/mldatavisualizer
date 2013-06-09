@@ -1,7 +1,7 @@
 structure Processing :> PROCESSING =
 struct
 
-  exception ProcessingError of string
+  exception Error of string
 
   datatype 'a tree = Node of 'a * ('a tree list)
 
@@ -13,7 +13,7 @@ struct
   fun procVal dVal =
     case dVal of
          Parser.Value (id, expr) => procExpr expr
-       | _ => raise ProcessingError "Invalid value declaration"
+       | _ => raise Error "Invalid value declaration"
 
   and procExpr expr =
     case expr of
@@ -24,7 +24,7 @@ struct
        | Parser.Tuple ls          => Node (procTuple ls)
        | Parser.NullaryCon s      => Node (s, [])
        | Parser.MultaryCon (s, e) => procExpr e
-       | _                        => raise ProcessingError "error" (*TODO*)
+       | _                        => raise Error "Error processing expression"
 
   and procTuple exprs =
     let fun aux exprs (strs, exps) =

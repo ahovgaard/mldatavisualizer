@@ -19,12 +19,15 @@ fun mid svgBool latexBool =
   \<input type=\"submit\" value=\"Visualize!\" />\n\
   \</form>"
 
+fun latexBox s = "<textarea cols=\"40\" rows=\"10\">" ^ s ^ "</textarea>"
+
 val htmlBot = let val is = TextIO.openIn "htmlBot.html"
               in (TextIO.inputAll is before TextIO.closeIn is)
                  handle e => (TextIO.closeIn is; raise e)
               end
 
-fun latexBox s = "<textarea cols=\"40\" rows=\"10\">" ^ s ^ "</textarea>"
+(* Full default page string with possible error message string s *)
+val stdPage = fn s => htmlTop ^ mid true false ^ s ^ htmlBot
 
 fun main () =
   let val cgiParams = CGI.getParams ()
@@ -36,8 +39,8 @@ fun main () =
       val latexSel = List.exists (fn (x, _) => x = "latex") cgiParams
   in
     if inputSet
-    then let val procRes = (Processing.proc o List.last o Parser.parse o
-                            Parser.scan) input
+    then (let val procRes = (Processing.proc o List.last o Parser.parse o
+                             Parser.scan) input
          in print (htmlTop ^ input);
             (if svgSel andalso latexSel
              then print (mid true true ^
@@ -49,10 +52,14 @@ fun main () =
              else print (mid true false ^
                          DrawingSvg.draw procRes));
             print htmlBot
-         end
-    else print (htmlTop ^ mid true false ^ htmlBot)
+         end) handle List.Empty => print (htmlTop ^ mid true false ^ htmlBot)
+    else print (stdPage "")
   end
 
 val _ = main ()
-  handle CGI.Error s => print ("Error recieving input, error message is: " ^ s)
-       | e           => print "Unknown exception thrown!"
+  handle CGI.Error s          => print (stdPage ("CGI error: " ^ s))
+       | Parser.InternalError => print (stdPage "Parser internal error")
+       | Parser.SyntaxError s => print (stdPage ("Parser syntax error: " ^ s))
+       | Processing.Error s   => print (stdPage ("Processing error: " ^ s))
+       | e                    => print (stdPage "Unknown exception thrown!")
+
