@@ -572,7 +572,9 @@ structure SvgPicture :> PICTURE = struct
         val () = pp_y_r := (fn y => pp_length unitlength (y0 - y))
         val A = pp_obj obj nil
         val svg = taga "svg" [("xmlns", "http://www.w3.org/2000/svg"),
-                              ("version", "1.1")] (String.concat A)
+                              ("version", "1.1"),
+                              ("viewBox", "-500 -50 1000 1000")]
+                             (String.concat A)
       in svg
       end
   fun export t = t

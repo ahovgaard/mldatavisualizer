@@ -1,5 +1,5 @@
-(*structure Processing :> PROCESSING =
-struct*)
+structure Processing :> PROCESSING =
+struct
 
   exception ProcessingError of string
 
@@ -10,7 +10,7 @@ struct*)
   val minNodeSep = 30
 
   (** Processing of Parser.partree into string tree *)
-  (*fun procVal dVal =
+  fun procVal dVal =
     case dVal of
          Parser.Value (id, expr) => procExpr expr
        | _ => raise ProcessingError "Invalid value declaration"
@@ -40,16 +40,22 @@ struct*)
              | MultaryCon (s, e) :: ls => aux ls (str, procExpr MultaryCon (s, e) :: exps)*)
     in
       aux exprs ([], [])
-    end*)
+    end
 
 
-  val testTree = Node ("a",
+  (*val testTree = Node ("a",
                   [Node ("b",
                     [Node ("c",
                       [Node ("f", [Node ("h", []), Node ("i", [])]),
                        Node ("g", [])]),
                      Node ("d", [])]),
                    Node ("e", [])])
+
+  val testTree = Node ("a", [Node ("b", []),
+                             Node ("c", []),
+                             Node ("d", [Node ("e", []),
+                                         Node ("f", []),
+                                         Node ("g", [])])])*)
 
   (** Tree positioning *)
   (* Displace a given tree horizontally by x' *)
@@ -101,29 +107,21 @@ struct*)
 
   fun design tree =
     let
-      fun design' (Node (label, subtrees), i) =
+      fun design' (Node (label, subtrees)) =
         let
-          val (trees, exts) = ListPair.unzip (map (fn t => design' (t, i + 1))
-                                                  subtrees)
+          val (trees, exts) = ListPair.unzip (map design' subtrees)
           val positions     = fitList exts
           val ptrees        = map moveTree (ListPair.zip (trees, positions))
           val pexts         = map moveExtent (ListPair.zip (exts, positions))
-          val resultextent  = (i * minNodeSep, i * minNodeSep) :: mergeList pexts
-          val resulttree    = Node ((label, i * minNodeSep), ptrees)
+          val resultextent  = (0, 0) :: mergeList pexts
+          val resulttree    = Node ((label, 0), ptrees)
         in
           (resulttree, resultextent)
         end
     in
-      #1 (design' (tree, 0))
+      #1 (design' tree)
     end
 
-  (*fun position tree =
-    let fun positionAux (Node ((s, x), ts), i) =
-          Node ((s, x (*10 * (x + Int.abs(x)) + 100*), i),
-                map (fn t => positionAux (t, i - 30)) ts)
-    in positionAux (design tree, 0)
-    end
+  val proc = design o procVal   
 
-  val proc = position o procVal   
-
-end*)
+end

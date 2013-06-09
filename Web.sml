@@ -7,18 +7,24 @@ val htmlTop = let val is = TextIO.openIn "htmlTop.html"
                  handle e => (TextIO.closeIn is; raise e)
               end
 
-val htmlMid = let val is = TextIO.openIn "htmlMid.html"
-              in (TextIO.inputAll is before TextIO.closeIn is)
-                 handle e => (TextIO.closeIn is; raise e)
-              end
+fun mid svgBool latexBool =
+  "</textarea>\n\
+  \<br /><br />\n\
+  \<input type=\"checkbox\" id=\"svg\" name=\"svg\" value=\"svg\""
+  ^ (if svgBool then " checked />\n" else " />\n") ^
+  "<label for=\"svg\">SVG (scalable image)</label>\n\
+  \<input type=\"checkbox\" id=\"latex\" name=\"latex\" value=\"latex\""
+  ^ (if latexBool then " checked />\n" else " />\n") ^
+  "<label for=\"latex\">LaTeX</label>\n\
+  \<input type=\"submit\" value=\"Visualize!\" />\n\
+  \</form>"
 
 val htmlBot = let val is = TextIO.openIn "htmlBot.html"
               in (TextIO.inputAll is before TextIO.closeIn is)
                  handle e => (TextIO.closeIn is; raise e)
               end
 
-val latexBox0 = "<textarea cols=\"40\" rows=\"10\">"
-val latexBox1 = "</textarea>"
+fun latexBox s = "<textarea cols=\"40\" rows=\"10\">" ^ s ^ "</textarea>"
 
 fun main () =
   let val cgiParams = CGI.getParams ()
@@ -32,18 +38,21 @@ fun main () =
     if inputSet
     then let val procRes = (Processing.proc o List.last o Parser.parse o
                             Parser.scan) input
-         in print (htmlTop ^ input ^ htmlMid);
+         in print (htmlTop ^ input);
             (if svgSel andalso latexSel
-             then print (latexBox0 ^ DrawingLatex.draw procRes ^ latexBox1 ^
+             then print (mid true true ^
+                         latexBox (DrawingLatex.draw procRes) ^
                          DrawingSvg.draw procRes)
              else if latexSel
-             then print (latexBox0 ^ DrawingLatex.draw procRes ^ latexBox1)
-             else print (DrawingSvg.draw procRes));
+             then print (mid false true ^
+                         latexBox (DrawingLatex.draw procRes))
+             else print (mid true false ^
+                         DrawingSvg.draw procRes));
             print htmlBot
          end
-    else print (htmlTop ^ htmlMid ^ htmlBot)
+    else print (htmlTop ^ mid true false ^ htmlBot)
   end
 
 val _ = main ()
   handle CGI.Error s => print ("Error recieving input, error message is: " ^ s)
-       | e           => print "Unknown exception thrown!" (* FIXME *)
+       | e           => print "Unknown exception thrown!"
