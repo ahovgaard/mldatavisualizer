@@ -1,5 +1,5 @@
-(*structure Processing :> PROCESSING =
-struct*)
+structure Processing :> PROCESSING =
+struct
 
   exception ProcessingError of string
 
@@ -7,10 +7,10 @@ struct*)
 
   type extent = (int * int) list
 
-  val minNodeSep = 30
+  val minNodeSep = 10
 
   (** Processing of Parser.partree into string tree *)
-  (*fun procVal dVal =
+  fun procVal dVal =
     case dVal of
          Parser.Value (id, expr) => procExpr expr
        | _ => raise ProcessingError "Invalid value declaration"
@@ -40,7 +40,7 @@ struct*)
              | MultaryCon (s, e) :: ls => aux ls (str, procExpr MultaryCon (s, e) :: exps)*)
     in
       aux exprs ([], [])
-    end*)
+    end
 
 
   val testTree = Node ("a",
@@ -58,16 +58,12 @@ struct*)
   (* Move an extent horizontally by a distance of x *)
   fun moveExtent (e, x) =  map (fn (p, q) => (p + x, q + x)) e
 
-<<<<<<< HEAD
-  fun mergelist es = List.foldl merge [] es
-=======
   (* Merge two non-overlapping extents, filling in the gap between them, by
    * picking the leftmost position of the first and the rightmost position
    * the second *)
   fun merge ([], qs)                     = qs
     | merge (ps, [])                     = ps
     | merge ((p, _) :: ps, (_, q) :: qs) = (p, q) :: merge (ps, qs)
->>>>>>> 7dc8182a198fc820b93af87fad5c63e97196ce44
 
   (* Merge a list of extents *)
   fun mergeList es = foldl merge [] es
@@ -75,7 +71,7 @@ struct*)
   (* Determine how close to each other two trees may be places, assuming a
    * minimum node separation of minNodeSep. Takes two extents and returns the
    * minimum posible distance. *)
-  fun fit ((_,p) :: ps) ((q,_) :: qs) = Int.max (fit ps qs, p - q + minNodeSep)
+  fun fit ((_,p) :: ps) ((q,_) :: qs) = Int.max (fit ps qs, p - q)
     | fit _             _             = 0
 
   (* Calculate a list of positions for each subtree relative to the leftmost
@@ -105,38 +101,22 @@ struct*)
 
   fun design tree =
     let
-<<<<<<< HEAD
-      val (trees, extents)
-          = ListPair.unzip (map design' subtrees)
-      val positions
-          = fitlist extents
-      val ptrees
-          = map movetree (ListPair.zip (trees, positions))
-      val pextents
-          = map moveextent (ListPair.zip (extents, positions))
-      val resultextent
-          = (0, 0) :: mergelist pextents
-      val resulttree
-          = Node((i, 0), ptrees)
-=======
-      fun design' (Node (label, subtrees), i) =
+      fun design' (Node (label, subtrees)) =
         let
-          val (trees, exts) = ListPair.unzip (map (fn t => design' (t, i + 1))
-                                                  subtrees)
+          val (trees, exts) = ListPair.unzip (map design' subtrees)
           val positions     = fitList exts
           val ptrees        = map moveTree (ListPair.zip (trees, positions))
           val pexts         = map moveExtent (ListPair.zip (exts, positions))
-          val resultextent  = (i * minNodeSep, i * minNodeSep) :: mergeList pexts
-          val resulttree    = Node ((label, i * minNodeSep), ptrees)
+          val resultextent  = (0, 0) :: mergeList pexts
+          val resulttree    = Node ((label, 0), ptrees)
         in
           (resulttree, resultextent)
         end
->>>>>>> 7dc8182a198fc820b93af87fad5c63e97196ce44
     in
-      #1 (design' (tree, 0))
+      #1 (design' tree)
     end
 
-  (*fun position tree =
+  fun position tree =
     let fun positionAux (Node ((s, x), ts), i) =
           Node ((s, x (*10 * (x + Int.abs(x)) + 100*), i),
                 map (fn t => positionAux (t, i - 30)) ts)
@@ -144,5 +124,4 @@ struct*)
     end
 
   val proc = position o procVal   
-
-end*)
+end
