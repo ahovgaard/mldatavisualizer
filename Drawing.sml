@@ -10,8 +10,8 @@ struct
   val sep = 30
 
   (* Draw a node and, if applicaple, a line to the parent node, i.e. return a
-   * list of O.t type items, from the external 'draw' library, representing the
-   * items to be drawn. *)
+* list of O.t type items, from the external 'draw' library, representing the
+* items to be drawn. *)
   fun drawNode (s, x, y) parentPos =
     case parentPos of
          NONE => let val rect = O.rect (x - w, y - h) (x + w, y + h)
@@ -53,6 +53,5 @@ struct
 
 end
 
-structure DrawingSvg   :> DRAWING = Drawing (structure P = SvgPicture)
+structure DrawingSvg :> DRAWING = Drawing (structure P = SvgPicture)
 structure DrawingLatex :> DRAWING = Drawing (structure P = LatexPicture)
-
