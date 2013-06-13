@@ -4,6 +4,7 @@ struct
   exception Error of string
 
   datatype 'a tree = Node of 'a * ('a tree list)
+                   (*| End  of 'a*)
 
   type extent = (int * int) list
 
@@ -22,25 +23,40 @@ struct
        | Parser.String n          => Node (n, [])
        | Parser.Char c            => Node (Char.toString c, [])
        | Parser.Tuple ls          => Node (procTuple ls)
+       | Parser.List ls           => procList ls (*Node (l, map procExpr ls)*)
        | Parser.NullaryCon s      => Node (s, [])
+       (*| Parser.NullaryCon s      => End s*)
        | Parser.MultaryCon (s, e) => procExpr e
        | _                        => raise Error "Error processing expression"
 
   and procTuple exprs =
-    let fun aux exprs (strs, exps) =
+    let fun aux exprs strs exps =
           case exprs of
-               Parser.Int n    :: ls => aux ls (Int.toString n :: strs, exps)
-             | Parser.Real n   :: ls => aux ls (Real.toString n :: strs, exps)
-             | Parser.String s :: ls => aux ls (s :: strs, exps)
-             | Parser.Char c   :: ls =>
-                 aux ls ("#\"" ^ Char.toString c ^ "\"" :: strs, exps)
-             | e :: ls => aux ls (strs, procExpr e :: exps)
-             | [] => (String.concatWith ", " (rev strs), rev exps)
+               Parser.Int n    :: ls => aux ls (Int.toString n :: strs) exps
+             | Parser.Real n   :: ls => aux ls (Real.toString n :: strs) exps
+             | Parser.String s :: ls => aux ls (s :: strs) exps
+             | Parser.Char c   :: ls => aux ls ("#\"" ^ Char.toString c ^ "\""
+                                                :: strs) exps
+             | e :: ls               => aux ls strs (procExpr e :: exps)
+             | []                    => (String.concatWith ", " (rev strs),
+                                         rev exps)
              (*| NullaryCon s :: ls      => aux ls (str, Node (s, []) :: exps)
-             | MultaryCon (s, e) :: ls => aux ls (str, procExpr MultaryCon (s, e) :: exps)*)
+             | MultaryCon (s, e) :: ls => aux ls (str,
+                                          procExpr MultaryCon (s, e) :: exps)*)
     in
-      aux exprs ([], [])
+      aux exprs [] []
     end
+
+  and procList exps =
+    case exps of
+         Parser.Int n :: ls =>
+          Node (Int.toString n,
+                foldr (fn (Parser.Int x, xs) => [Node (Int.toString x, xs)]) [] ls)
+
+         (*Parser.Int n     :: ls => Node (Int.toString n, [procList ls])
+       | Parser.String s  :: ls => Node (s, [procList ls])
+       | []                     => []
+       | _                      => raise Fail "fix" (*"fixme"*)*)
 
 
   (*val testTree = Node ("a",
