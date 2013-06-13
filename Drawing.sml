@@ -56,3 +56,4 @@ end
 structure DrawingSvg   :> DRAWING = Drawing (structure P = SvgPicture)
 structure DrawingLatex :> DRAWING = Drawing (structure P = LatexPicture)
 
+

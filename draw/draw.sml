@@ -1,5 +1,5 @@
 (* Original license:
- * Copyright 2010, Martin Elsman. MIT License *)
+* Copyright 2010, Martin Elsman. MIT License *)
 
 structure Context :> CONTEXT = struct
   datatype color = RGB of int * int * int
@@ -17,27 +17,27 @@ structure Context :> CONTEXT = struct
   fun add_entry x xs = x::xs
   val empty : t = nil
 
-  val rec get_stroke_width = 
+  val rec get_stroke_width =
    fn stroke_width n :: rest => n
     | _ :: rest => get_stroke_width rest
     | nil => 1
 
-  val rec get_stroke_color = 
+  val rec get_stroke_color =
    fn stroke_color c :: rest => c
     | _ :: rest => get_stroke_color rest
     | nil => black
 
-  val rec get_fill_color = 
+  val rec get_fill_color =
    fn fill_color c :: rest => c
     | _ :: rest => get_fill_color rest
     | nil => white
 
-  val rec get_text_valign = 
+  val rec get_text_valign =
    fn text_valign a :: rest => a
     | _ :: rest => get_text_valign rest
     | nil => Middle
 
-  val rec get_text_halign = 
+  val rec get_text_halign =
    fn text_halign a :: rest => a
     | _ :: rest => get_text_halign rest
     | nil => Center
@@ -60,7 +60,7 @@ structure Object = struct
   type t = C.t -> obj
 
   fun line p1 p2 c = (c, Line (toRpoint p1,toRpoint p2))
-  fun rect p1 p2 c = 
+  fun rect p1 p2 c =
       let val p1 as (x1,y1) = toRpoint p1
           val p2 as (x2,y2) = toRpoint p2
       in (c, Polygon [p1,(x2,y1),p2,(x1,y2)])
@@ -86,12 +86,12 @@ structure Object = struct
             fun t_p (x,y) = (x + t_x, y + t_y)
         in transl t_p (t c)
         end
-    fun rotate theta t c = 
+    fun rotate theta t c =
         let fun r (x,y) = (x * Math.cos theta - y * Math.sin theta,
                            y * Math.cos theta + x * Math.sin theta)
         in transl r (t c)
         end
-    fun scale (xs,ys) t c = 
+    fun scale (xs,ys) t c =
         let fun s (x,y) = (xs * x, ys * y)
         in transl s (t c)
         end
@@ -101,7 +101,7 @@ structure Object = struct
             fun sq x = x * x
             val (l_x,l_y) = (l_x - t_x, l_y - t_y)
             val d = sq l_x + sq l_y
-            fun f (x,y) = 
+            fun f (x,y) =
                 ((x * (2.0 * l_x * l_y) + y * (sq l_x - sq l_y)) / d,
                  (x * (sq l_y - sq l_x) + y * (2.0 * l_x * l_y)) / d)
             fun t (x,y) = (x - t_x, y - t_y)
@@ -125,7 +125,7 @@ structure Object = struct
               case ds of
                 nil => nil
               | d :: ds =>
-                let val p' = interp p d 
+                let val p' = interp p d
                 in p' :: loop p' ds
                 end
               val points = loop p ds
@@ -143,7 +143,7 @@ structure Object = struct
     val %^ : t * real -> t = fn (t,s) => scale (1.0,s) t
     val @@ : t * real -> t = fn (t,theta) => rotate theta t
 
-    val &  : t * t -> t = fn (t1,t2) => all[t1,t2]
+    val & : t * t -> t = fn (t1,t2) => all[t1,t2]
     val // : C.entry * t -> t = fn (e,t) => fn c => t(C.add_entry e c)
   end
 
@@ -166,7 +166,7 @@ structure Object = struct
       end
 
   infix == @@ %^
-  fun (r1:real) == r2 = not (r1 < r2 orelse r2 < r1) 
+  fun (r1:real) == r2 = not (r1 < r2 orelse r2 < r1)
   fun pointsEq((x1,y1),(x2,y2)) =
       x1 == x2 andalso y1 == y2
 
@@ -194,7 +194,7 @@ end
 structure Widget : WIDGET = struct
   type t = Object.t
   structure O = Object
-  fun ruler opt = 
+  fun ruler opt =
       let val ts =
               [O.line (0,0) (100,0),
                O.line (0,0) (0,20),
@@ -210,16 +210,16 @@ structure Widget : WIDGET = struct
                O.line (100,0) (100,20)]
         val ts = case opt of
                    NONE => ts
-                 | SOME (min,max) => 
+                 | SOME (min,max) =>
                    O.text (0,~50) min ::
                    O.text (100,~50) max :: ts
       in O.all ts
       end
 
-  fun ruler2 r opt = 
+  fun ruler2 r opt =
       let val r = 10.0 * r
           fun norm z = round (real z / r)
-          fun line (x1,y1) (x2,y2) =              
+          fun line (x1,y1) (x2,y2) =
               O.line (norm x1,norm y1) (norm x2,norm y2)
           val ts =
               [line (0,0) (100,0),
@@ -236,7 +236,7 @@ structure Widget : WIDGET = struct
                line (100,0) (100,20)]
         val ts = case opt of
                    NONE => ts
-                 | SOME (min,max) => 
+                 | SOME (min,max) =>
                    O.text (0,norm ~50) min ::
                    O.text (norm 100,norm ~50) max :: ts
       in O.all ts
@@ -249,7 +249,7 @@ structure Widget : WIDGET = struct
          val a = if x = 0 then
                    if y > 0 then Math.pi/2.0
                    else if y < 0 then 1.5 * Math.pi else 0.0
-                 else 
+                 else
                    Math.atan (real y / real x)
      in if x < 0 then a + Math.pi else a
      end
@@ -268,7 +268,7 @@ structure Widget : WIDGET = struct
          fun lines n a =
              let val x1 = n * dot_sz
              in if x1 >= len then a
-                else 
+                else
                   let val x2 = (n+1) * dot_sz
                     val x2 = if x2 >= len then len else x2
                   in O.line (x1,0) (x2,0) :: lines (n+2) a
@@ -283,7 +283,7 @@ structure Widget : WIDGET = struct
    fun sizer ulen offset rotation point len =
      let
        val offset = ~offset
-       val stopline_sz = conv ulen 80 
+       val stopline_sz = conv ulen 80
        val stopline_sz2 = conv ulen 50
        val textsz = conv ulen 100
        val v = vdotline ulen stopline_sz
@@ -304,7 +304,7 @@ structure Widget : WIDGET = struct
      in O.translate point x
      end
   in
-   fun dotline ulen p1 p2 = 
+   fun dotline ulen p1 p2 =
        O.translate p1 (O.rotate (line_angle p1 p2) (hdotline ulen (line_len p1 p2)))
    fun measure ulen offset p1 p2 =
      sizer ulen offset (line_angle p1 p2) p1 (line_len p1 p2)
@@ -337,7 +337,7 @@ structure LatexPicture :> PICTURE = struct
       if r < 0.0 then "-" ^ Real.toString (~r)
       else Real.toString r
 
-  fun pr_p (x, y) = 
+  fun pr_p (x, y) =
       "(" ^ int_to_string (floor x) ^ "," ^ int_to_string (floor y) ^ ")"
 
   infix ==
@@ -352,7 +352,7 @@ structure LatexPicture :> PICTURE = struct
 
   (* Notice: prop in continuation specifies the assumptions of the continuation *)
   fun pp_obj (c,t0) (A:string list,prop:prop) : string list * prop =
-      let val (A, prop) = 
+      let val (A, prop) =
           if O.C.get_stroke_color c = prop_color prop then (A, prop)
           else ("\\color" ^ pr_color (prop_color prop) :: A, {color=O.C.get_stroke_color c})
       in
@@ -360,7 +360,7 @@ structure LatexPicture :> PICTURE = struct
           O.Line(p1 as (x1,y1), p2 as (x2,y2)) =>
           (if O.pointsEq(p1,p2) then (A,prop)
            else
-             let 
+             let
                fun putline p sl l (A:string list) : string list =
                   ("\\put" ^ pr_p p ^ "{\\line" ^ pr_p sl ^ "{" ^ int_to_string (floor l) ^ "}}") :: A
                val A2 =
@@ -395,13 +395,13 @@ structure LatexPicture :> PICTURE = struct
         | O.Polyline (p1::p2::ps) =>
           pp_obj (c,O.Line(p1,p2)) (pp_obj(c,O.Polyline(p2::ps)) (A,prop))
         | O.Polyline _ => (A,prop)
-        | O.Polygon (p::ps) => 
+        | O.Polygon (p::ps) =>
           pp_obj(c,O.Polyline(p::ps))
                 (case rev ps of
                    nil => (A,prop)
                  | p2::_ => pp_obj(c,O.Line(p,p2)) (A,prop))
         | O.Polygon _ => (A,prop)
-        | O.All (t::ts) => 
+        | O.All (t::ts) =>
           let val (A,prop) = pp_obj (c,O.All ts) (A,prop)
           in pp_obj t (A,prop)
           end
@@ -412,10 +412,10 @@ structure LatexPicture :> PICTURE = struct
       let val obj = t O.C.empty
           val (A,prop) = pp_obj obj (["\\end{picture}"],prop_default)
       in
-        "\\setlength{\\unitlength}{" ^ pp_length unitlength ^ "}" :: 
-        "\\begin{picture}" ^ pr_p (O.toRpoint p) :: 
-(*        "\\color" ^ pr_color (O.C.RGB(240,240,240)) ::
-        "\\graphpaper[50](0,0)" ^ pr_p p ::
+        "\\setlength{\\unitlength}{" ^ pp_length unitlength ^ "}" ::
+        "\\begin{picture}" ^ pr_p (O.toRpoint p) ::
+(* "\\color" ^ pr_color (O.C.RGB(240,240,240)) ::
+"\\graphpaper[50](0,0)" ^ pr_p p ::
 *)
         "\\color" ^ pr_color (prop_color prop) ::
         A
@@ -430,12 +430,12 @@ structure LatexPicture :> PICTURE = struct
 
   fun seq ss = concatWith "\n\n" ss
 
-  fun pp_size size = 
+  fun pp_size size =
       case size of
         A4 => "a4paper"
       | A3 => "a3paper"
 
-  fun header size = 
+  fun header size =
       ["\\documentclass{article}",
        "\\usepackage[" ^ pp_size size ^ "]{geometry}",
        "\\usepackage{color}",
@@ -447,7 +447,7 @@ structure LatexPicture :> PICTURE = struct
        "\\noindent"
       ]
 
-  val footer = 
+  val footer =
       ["\\end{document}"]
 
   fun toFile size file lines =
@@ -460,7 +460,7 @@ structure LatexPicture :> PICTURE = struct
 
   fun toString size lines =
     let val lines = header size @ lines @ footer
-        val text  = export lines
+        val text = export lines
     in text
     end
 
@@ -472,7 +472,7 @@ structure SvgPicture :> PICTURE = struct
   structure W = Widget
   fun qq s = "\"" ^ s ^ "\""
   fun pr_color (O.C.RGB(r,g,b)) =
-      let fun zero_prefix s = 
+      let fun zero_prefix s =
               if size s = 1 then "0" ^ s
               else s
           fun pr_comp i =
@@ -490,14 +490,14 @@ structure SvgPicture :> PICTURE = struct
       if r < 0.0 then "-" ^ Real.toString (~r)
       else Real.toString r
 
-  fun pr_p (x, y) = 
+  fun pr_p (x, y) =
       "(" ^ int_to_string (floor x) ^ "," ^ int_to_string (floor y) ^ ")"
 
   fun pp_attrs nil = ""
-    | pp_attrs ((x,y)::xs) = 
+    | pp_attrs ((x,y)::xs) =
       " " ^ x ^ "=" ^ qq y ^ pp_attrs xs
 
-  fun taga t a e = "<" ^ t ^ pp_attrs a ^ ">\n" ^ e ^ "</" ^ t ^ ">\n" 
+  fun taga t a e = "<" ^ t ^ pp_attrs a ^ ">\n" ^ e ^ "</" ^ t ^ ">\n"
   fun taga0 t a = "<" ^ t ^ pp_attrs a ^ " />\n"
   fun tag t e = taga t nil e
 
@@ -528,12 +528,12 @@ structure SvgPicture :> PICTURE = struct
                         ("style","stroke:" ^ pr_color (O.C.get_stroke_color c))] :: A
       | O.Qbezier(p1,p2,p3) =>
         if O.pointsEq(p1,p2) andalso O.pointsEq(p2,p3) then A
-        else 
+        else
           taga0 "path" [("d", "M" ^ pp_p p1 ^ " Q" ^ pp_p p2 ^ " T" ^ pp_p p3),
                         ("stroke", pr_color (O.C.get_stroke_color c)),
                         ("stroke-width", Int.toString (O.C.get_stroke_width c)),
                         ("fill","none")] :: A
-      | O.Text((x,y),s) => 
+      | O.Text((x,y),s) =>
         let val t = if O.C.get_text_halign c = O.C.Right then "end" else
                     if O.C.get_text_halign c = O.C.Center then "middle"
                     else "start"
@@ -541,7 +541,7 @@ structure SvgPicture :> PICTURE = struct
                     else if O.C.get_text_valign c = O.C.Middle then "middle"
                     else "text-before-edge"
         in
-          taga "text" 
+          taga "text"
                [("x",pp_x x),
                 ("y",pp_y y),
                 ("text-anchor",t),
@@ -550,13 +550,13 @@ structure SvgPicture :> PICTURE = struct
       | O.Polyline (p1::p2::ps) =>
         pp_obj (c,O.Line(p1,p2)) (pp_obj(c,O.Polyline(p2::ps)) A)
       | O.Polyline _ => A
-      | O.Polygon (p::ps) => 
+      | O.Polygon (p::ps) =>
         pp_obj(c,O.Polyline(p::ps))
               (case rev ps of
                  nil => A
                | p2::_ => pp_obj(c,O.Line(p,p2)) A)
       | O.Polygon _ => A
-      | O.All (t::ts) => 
+      | O.All (t::ts) =>
         let val A = pp_obj (c,O.All ts) A
         in pp_obj t A
         end
@@ -567,14 +567,12 @@ structure SvgPicture :> PICTURE = struct
   fun picture {unitlength,dim=p} (f:O.t) : t =
       let
         val obj = f O.C.empty
-        val (x0,y0) = O.toRpoint p  (* x0 not used *)
+        val (x0,y0) = O.toRpoint p (* x0 not used *)
         val () = pp_x_r := (pp_length unitlength)
         val () = pp_y_r := (fn y => pp_length unitlength (y0 - y))
         val A = pp_obj obj nil
         val svg = taga "svg" [("xmlns", "http://www.w3.org/2000/svg"),
-                              ("version", "1.1"),
-                              ("viewBox", "-500 -50 1000 1000")]
-                             (String.concat A)
+                              ("version", "1.1")] (String.concat A)
       in svg
       end
   fun export t = t
@@ -590,7 +588,7 @@ structure SvgPicture :> PICTURE = struct
       end
 
   fun toString size lines =
-    let val text  = export lines
+    let val text = export lines
     in text
     end
 
